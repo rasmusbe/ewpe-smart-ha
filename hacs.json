@@ -1,0 +1,6 @@
+{
+  "name": "EWPE Smart",
+  "render_readme": true,
+  "homeassistant": "2024.8.0",
+  "iot_class": "Local Polling"
+}

@@ -1,0 +1,65 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "EWPE Smart",
+        "description": "Choose how to add an EWPE Smart device",
+        "menu_options": {
+          "manual": "Enter IP address manually",
+          "discover": "Scan local network"
+        }
+      },
+      "manual": {
+        "title": "Add device by IP",
+        "data": {
+          "host": "IP address",
+          "name": "Friendly name (optional)"
+        }
+      },
+      "discover": {
+        "title": "Scan network",
+        "data": {
+          "broadcast": "Broadcast address"
+        }
+      },
+      "pick_device": {
+        "title": "Pick a device",
+        "data": {
+          "host": "Device"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate",
+        "description": "The device key has been rejected. Power-cycle the unit if you've recently reset it, then click Submit to re-bind."
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the device on the supplied IP",
+      "invalid_response": "The device replied with an unexpected payload",
+      "no_devices": "No devices were found on the network",
+      "scan_failed": "Network scan failed",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This device is already configured",
+      "reauth_successful": "Re-authentication successful"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "EWPE Smart options",
+        "data": {
+          "update_interval": "Polling interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "indoor_temperature": {
+        "name": "Indoor temperature"
+      }
+    }
+  }
+}
