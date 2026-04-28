@@ -1,13 +1,13 @@
 {
   "domain": "ewpe_smart",
   "name": "EWPE Smart",
-  "version": "0.1.0",
-  "config_flow": true,
-  "documentation": "https://github.com/anaryk/ewpe-smart-ha",
-  "issue_tracker": "https://github.com/anaryk/ewpe-smart-ha/issues",
   "codeowners": ["@anaryk"],
+  "config_flow": true,
   "dependencies": [],
-  "requirements": [],
+  "documentation": "https://github.com/anaryk/ewpe-smart-ha",
+  "integration_type": "device",
   "iot_class": "local_polling",
-  "integration_type": "device"
+  "issue_tracker": "https://github.com/anaryk/ewpe-smart-ha/issues",
+  "requirements": [],
+  "version": "0.1.0"
 }
