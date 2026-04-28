@@ -1,4 +1,5 @@
 """High-level wrapper around a single EWPE Smart device."""
+
 from __future__ import annotations
 
 import logging

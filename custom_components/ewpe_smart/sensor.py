@@ -1,4 +1,5 @@
 """Indoor temperature sensor entity for EWPE Smart."""
+
 from __future__ import annotations
 
 from homeassistant.components.sensor import (

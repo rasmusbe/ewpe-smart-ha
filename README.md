@@ -1,7 +1,13 @@
 # EWPE Smart — Home Assistant Integration
 
+[![Tests](https://github.com/anaryk/ewpe-smart-ha/actions/workflows/tests.yml/badge.svg)](https://github.com/anaryk/ewpe-smart-ha/actions/workflows/tests.yml)
+[![Validate](https://github.com/anaryk/ewpe-smart-ha/actions/workflows/validate.yml/badge.svg)](https://github.com/anaryk/ewpe-smart-ha/actions/workflows/validate.yml)
+[![Lint](https://github.com/anaryk/ewpe-smart-ha/actions/workflows/lint.yml/badge.svg)](https://github.com/anaryk/ewpe-smart-ha/actions/workflows/lint.yml)
+[![CodeQL](https://github.com/anaryk/ewpe-smart-ha/actions/workflows/codeql.yml/badge.svg)](https://github.com/anaryk/ewpe-smart-ha/actions/workflows/codeql.yml)
+[![Bandit](https://github.com/anaryk/ewpe-smart-ha/actions/workflows/bandit.yml/badge.svg)](https://github.com/anaryk/ewpe-smart-ha/actions/workflows/bandit.yml)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 ![version](https://img.shields.io/badge/version-0.1.0-blue)
+![license](https://img.shields.io/badge/license-MIT-green.svg)
 
 Local-polling Home Assistant integration for air conditioners controlled via the
 **EWPE Smart** mobile app — works with **Daitsu**, **Gree**, **Cooper&Hunter**,
@@ -31,7 +37,7 @@ talks to the unit over UDP/7000 directly — no MQTT broker, no extra processes.
 | Requirement | Details |
 |---|---|
 | Home Assistant | ≥ 2024.8 |
-| Python package | `pycryptodome ≥ 3.19.0` (auto-installed by HA) |
+| Python package | `cryptography` (already shipped with Home Assistant) |
 | Network | HA must be able to reach the AC unit over UDP port 7000 |
 | Device setup | The AC must be already connected to your WiFi via the **EWPE Smart** app |
 

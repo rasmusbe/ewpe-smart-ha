@@ -1,4 +1,5 @@
 """Shared fixtures for the EWPE Smart test suite."""
+
 from __future__ import annotations
 
 import sys

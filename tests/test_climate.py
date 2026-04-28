@@ -1,4 +1,5 @@
 """Tests for the climate entity state mapping and command emission."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock

@@ -1,4 +1,5 @@
 """Polling coordinator for an EWPE Smart device."""
+
 from __future__ import annotations
 
 import logging

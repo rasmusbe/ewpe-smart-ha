@@ -1,4 +1,5 @@
 """Climate entity for EWPE Smart air conditioners."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -60,9 +61,7 @@ FAN_MODE_TO_DEVICE: dict[str, int] = {
     FAN_MEDIUM: FAN_SPEED_MEDIUM,
     FAN_HIGH: FAN_SPEED_HIGH,
 }
-DEVICE_TO_FAN_MODE: dict[int, str] = {
-    v: k for k, v in FAN_MODE_TO_DEVICE.items()
-}
+DEVICE_TO_FAN_MODE: dict[int, str] = {v: k for k, v in FAN_MODE_TO_DEVICE.items()}
 
 
 async def async_setup_entry(

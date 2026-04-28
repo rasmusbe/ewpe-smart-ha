@@ -21,4 +21,5 @@ select = [
 ]
 ignore = [
     "E501",
+    "ASYNC109",
 ]

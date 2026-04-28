@@ -4,6 +4,7 @@ These tests open real UDP sockets bound to 127.0.0.1, so the
 ``pytest-socket`` block (enabled by ``pytest-homeassistant-custom-component``)
 must be lifted via the ``socket_enabled`` fixture.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -11,7 +12,11 @@ import asyncio
 import pytest
 
 from custom_components.ewpe_smart.device import EwpeDevice
-from custom_components.ewpe_smart.protocol import EwpeProtocolError, EwpeTimeout
+from custom_components.ewpe_smart.protocol import (
+    EwpeError,
+    EwpeProtocolError,
+    EwpeTimeout,
+)
 
 from .mock_device import start_mock_device
 
@@ -80,7 +85,7 @@ async def test_garbage_reply_raises_protocol_error() -> None:
 @pytest.mark.asyncio
 async def test_set_state_without_bind_raises() -> None:
     device = EwpeDevice(host="127.0.0.1", port=1, timeout=0.5)
-    with pytest.raises(Exception):
+    with pytest.raises(EwpeError):
         await device.set_state({"Pow": 1})
 
 

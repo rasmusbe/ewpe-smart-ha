@@ -7,6 +7,7 @@ Wire format reference:
 - https://github.com/tomikaa87/gree-remote
 - https://github.com/stas-demydiuk/ewpe-smart-mqtt
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -16,14 +17,15 @@ import logging
 import socket
 from typing import Any
 
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .const import DEFAULT_TIMEOUT, GENERIC_KEY
 
 _LOGGER = logging.getLogger(__name__)
 
-_BLOCK_SIZE = AES.block_size  # 16
+_BLOCK_BITS = 128  # AES block size in bits, used by PKCS#7 padder
+_BLOCK_BYTES = _BLOCK_BITS // 8
 
 
 class EwpeError(Exception):
@@ -42,21 +44,33 @@ class EwpeAuthError(EwpeError):
     """Raised when a reply cannot be decrypted with the supplied key."""
 
 
+def _aes_ecb(key: bytes) -> Cipher:
+    # ECB is mandated by the device protocol — the wire format predates
+    # modern cipher modes. We can't pick something safer here.
+    return Cipher(algorithms.AES(key), modes.ECB())  # nosec B305
+
+
 def encrypt(payload: dict[str, Any], key: bytes = GENERIC_KEY) -> str:
     """AES-128 ECB encrypt ``payload`` and return base64 ASCII."""
-    cipher = AES.new(key, AES.MODE_ECB)
     plaintext = json.dumps(payload, separators=(",", ":")).encode("utf-8")
-    ciphertext = cipher.encrypt(pad(plaintext, _BLOCK_SIZE))
+    padder = padding.PKCS7(_BLOCK_BITS).padder()
+    padded = padder.update(plaintext) + padder.finalize()
+    encryptor = _aes_ecb(key).encryptor()
+    ciphertext = encryptor.update(padded) + encryptor.finalize()
     return base64.b64encode(ciphertext).decode("ascii")
 
 
 def decrypt(ciphertext: str, key: bytes = GENERIC_KEY) -> dict[str, Any]:
     """Decrypt a base64 AES-128 ECB blob into a JSON object."""
-    cipher = AES.new(key, AES.MODE_ECB)
     raw = base64.b64decode(ciphertext)
+    if len(raw) == 0 or len(raw) % _BLOCK_BYTES != 0:
+        raise EwpeAuthError("Ciphertext length is not a multiple of block size")
+    decryptor = _aes_ecb(key).decryptor()
+    decoded_padded = decryptor.update(raw) + decryptor.finalize()
+    unpadder = padding.PKCS7(_BLOCK_BITS).unpadder()
     try:
-        decoded = unpad(cipher.decrypt(raw), _BLOCK_SIZE)
-    except (ValueError, KeyError) as err:
+        decoded = unpadder.update(decoded_padded) + unpadder.finalize()
+    except ValueError as err:
         raise EwpeAuthError("Failed to decrypt payload") from err
     try:
         return json.loads(decoded.decode("utf-8"))
@@ -131,7 +145,7 @@ async def send_request(
         transport.sendto(_outer_packet(payload, key))
         try:
             data, _addr = await asyncio.wait_for(protocol.future, timeout=timeout)
-        except asyncio.TimeoutError as err:
+        except TimeoutError as err:
             raise EwpeTimeout(f"No reply from {host}:{port} in {timeout}s") from err
     finally:
         transport.close()

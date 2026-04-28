@@ -3,6 +3,7 @@
 Used by the test suite to exercise the full client → server → client cycle
 without touching the network.
 """
+
 from __future__ import annotations
 
 import asyncio

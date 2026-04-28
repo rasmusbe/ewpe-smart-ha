@@ -1,4 +1,5 @@
 """EWPE Smart integration for Home Assistant."""
+
 from __future__ import annotations
 
 import logging
@@ -35,9 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         key=data[CONF_KEY].encode("utf-8"),
     )
 
-    update_interval = entry.options.get(
-        CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
-    )
+    update_interval = entry.options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
     coordinator = EwpeCoordinator(hass, entry, device, update_interval)
     await coordinator.async_config_entry_first_refresh()
 
