@@ -76,7 +76,7 @@ def probe(ip: str, decrypt: bool) -> int:
             return 2
         try:
             data, addr = sock.recvfrom(4096)
-        except socket.timeout:
+        except TimeoutError:
             print(f"[{ip}]   ✗ no reply within {TIMEOUT}s")
             print(
                 f"[{ip}]     → device unreachable from this host. "
