@@ -10,8 +10,11 @@ from .const import (
     DEFAULT_PORT,
     DEFAULT_TIMEOUT,
     GENERIC_KEY,
+    GENERIC_KEY_V2,
     PARAM_TEMP_SENSOR,
     PHASE1_PARAMS,
+    PROTO_V1,
+    PROTO_V2,
     TEMP_SENSOR_OFFSET,
 )
 from .protocol import (
@@ -27,6 +30,10 @@ from .protocol import (
 _LOGGER = logging.getLogger(__name__)
 
 
+def _generic_key_for(version: int) -> bytes:
+    return GENERIC_KEY_V2 if version == PROTO_V2 else GENERIC_KEY
+
+
 @dataclass
 class EwpeDevice:
     """Encapsulates one EWPE Smart air conditioner."""
@@ -36,6 +43,7 @@ class EwpeDevice:
     mac: str | None = None
     name: str | None = None
     key: bytes | None = None
+    version: int = PROTO_V1
     timeout: float = DEFAULT_TIMEOUT
     info: dict[str, Any] = field(default_factory=dict)
 
@@ -45,14 +53,20 @@ class EwpeDevice:
             await self._discover()
 
         _LOGGER.info(
-            "Binding to %s (mac %s) on %s:%s", self.name, self.mac, self.host, self.port
+            "Binding to %s (mac %s, proto v%d) on %s:%s",
+            self.name,
+            self.mac,
+            self.version,
+            self.host,
+            self.port,
         )
         reply = await send_request(
             self.host,
             self.port,
-            GENERIC_KEY,
+            _generic_key_for(self.version),
             {"mac": self.mac, "t": "bind", "uid": 0},
             timeout=self.timeout,
+            version=self.version,
         )
         if reply.get("t") != "bindok":
             raise EwpeProtocolError(f"Unexpected bind reply: {reply!r}")
@@ -60,14 +74,22 @@ class EwpeDevice:
         if not isinstance(key, str) or not key:
             raise EwpeProtocolError("Bind reply contains no usable key")
         self.key = key.encode("utf-8")
-        _LOGGER.info("Bound device %s (%s) on %s", self.name, self.mac, self.host)
+        _LOGGER.info(
+            "Bound device %s (%s, proto v%d) on %s",
+            self.name,
+            self.mac,
+            self.version,
+            self.host,
+        )
 
     async def _discover(self) -> None:
-        """Send a unicast scan to ``self.host`` to learn MAC and name."""
+        """Send a unicast scan to learn MAC, name, and protocol version."""
         _LOGGER.info(
             "Discovering device on %s:%s via unicast scan", self.host, self.port
         )
-        reply = await unicast_scan(self.host, self.port, timeout=self.timeout)
+        reply, version = await unicast_scan(
+            self.host, self.port, timeout=self.timeout
+        )
         if reply.get("t") != "dev":
             raise EwpeProtocolError(f"Unexpected scan reply: {reply!r}")
         mac = reply.get("cid") or reply.get("mac")
@@ -75,16 +97,18 @@ class EwpeDevice:
             raise EwpeProtocolError("Scan reply contains no MAC")
         self.mac = mac
         self.name = reply.get("name") or mac
+        self.version = version
         self.info = {
             k: reply[k]
             for k in ("brand", "model", "vender", "ver", "hid")
             if k in reply
         }
         _LOGGER.info(
-            "Discovered %s (mac=%s, model=%s)",
+            "Discovered %s (mac=%s, model=%s, proto=v%d)",
             self.name,
             self.mac,
             self.info.get("model", "unknown"),
+            self.version,
         )
 
     async def get_status(self, cols: list[str] | None = None) -> dict[str, int]:
@@ -98,6 +122,7 @@ class EwpeDevice:
             self.key,
             {"cols": cols, "mac": self.mac, "t": "status"},
             timeout=self.timeout,
+            version=self.version,
         )
         if reply.get("t") != "dat":
             raise EwpeProtocolError(f"Unexpected status reply: {reply!r}")
@@ -126,6 +151,7 @@ class EwpeDevice:
             self.key,
             {"opt": opt, "p": values, "mac": self.mac, "t": "cmd"},
             timeout=self.timeout,
+            version=self.version,
         )
         if reply.get("t") != "res":
             raise EwpeProtocolError(f"Unexpected cmd reply: {reply!r}")

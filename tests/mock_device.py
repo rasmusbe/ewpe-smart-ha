@@ -1,7 +1,8 @@
 """A tiny in-process UDP server that simulates an EWPE Smart device.
 
 Used by the test suite to exercise the full client → server → client cycle
-without touching the network.
+without touching the network. Can speak either the V1 (AES-ECB) or V2
+(AES-GCM) wire format depending on ``protocol_version``.
 """
 
 from __future__ import annotations
@@ -10,8 +11,18 @@ import asyncio
 import json
 from typing import Any
 
-from custom_components.ewpe_smart.const import GENERIC_KEY
-from custom_components.ewpe_smart.protocol import decrypt, encrypt
+from custom_components.ewpe_smart.const import (
+    GENERIC_KEY,
+    GENERIC_KEY_V2,
+    PROTO_V1,
+    PROTO_V2,
+)
+from custom_components.ewpe_smart.protocol import (
+    decrypt,
+    decrypt_v2,
+    encrypt,
+    encrypt_v2,
+)
 
 
 class MockEwpeProtocol(asyncio.DatagramProtocol):
@@ -24,6 +35,7 @@ class MockEwpeProtocol(asyncio.DatagramProtocol):
         device_key: bytes = b"abcdefghijklmnop",
         status: dict[str, int] | None = None,
         misbehave: str | None = None,
+        protocol_version: int = PROTO_V1,
     ) -> None:
         self.mac = mac
         self.name = name
@@ -37,8 +49,48 @@ class MockEwpeProtocol(asyncio.DatagramProtocol):
             "TemSen": 65,  # raw value before -40 offset → 25 °C
         }
         self.misbehave = misbehave
+        self.protocol_version = protocol_version
         self.received_commands: list[dict[str, Any]] = []
         self.transport: asyncio.DatagramTransport | None = None
+
+    @property
+    def _generic_key(self) -> bytes:
+        return GENERIC_KEY_V2 if self.protocol_version == PROTO_V2 else GENERIC_KEY
+
+    def _decrypt_inbound(self, envelope: dict[str, Any]) -> dict[str, Any]:
+        key = (
+            self._generic_key
+            if envelope.get("i") == 1
+            else self.device_key
+        )
+        if "tag" in envelope:
+            return decrypt_v2(envelope["pack"], envelope["tag"], key)
+        return decrypt(envelope["pack"], key)
+
+    def _build_envelope(self, reply: dict[str, Any]) -> dict[str, Any]:
+        out_key = (
+            self.device_key
+            if reply.get("t") in {"dat", "res"}
+            else self._generic_key
+        )
+        i_field = 0 if reply.get("t") in {"dat", "res"} else 1
+        if self.protocol_version == PROTO_V2:
+            pack, tag = encrypt_v2(reply, out_key)
+            return {
+                "cid": self.mac,
+                "i": i_field,
+                "t": "pack",
+                "uid": 0,
+                "pack": pack,
+                "tag": tag,
+            }
+        return {
+            "cid": self.mac,
+            "i": i_field,
+            "t": "pack",
+            "uid": 0,
+            "pack": encrypt(reply, out_key),
+        }
 
     def connection_made(self, transport: asyncio.DatagramTransport) -> None:
         self.transport = transport
@@ -53,27 +105,19 @@ class MockEwpeProtocol(asyncio.DatagramProtocol):
 
         envelope = json.loads(data.decode("utf-8"))
         if "pack" in envelope:
-            key = GENERIC_KEY if envelope.get("i") == 1 else self.device_key
-            inner = decrypt(envelope["pack"], key)
+            inner = self._decrypt_inbound(envelope)
         else:
-            # Unencrypted broadcast scan
+            # Unencrypted broadcast/unicast scan
             inner = envelope
 
         reply = self._build_reply(inner)
         if reply is None:
             return
 
-        out_key = self.device_key if reply.get("t") in {"dat", "res"} else GENERIC_KEY
-        out_envelope = {
-            "cid": self.mac,
-            "i": 0 if reply.get("t") in {"dat", "res"} else 1,
-            "t": "pack",
-            "uid": 0,
-            "pack": encrypt(reply, out_key),
-        }
+        out = self._build_envelope(reply)
         assert self.transport is not None
         self.transport.sendto(
-            json.dumps(out_envelope, separators=(",", ":")).encode("utf-8"),
+            json.dumps(out, separators=(",", ":")).encode("utf-8"),
             addr,
         )
 

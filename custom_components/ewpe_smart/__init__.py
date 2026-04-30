@@ -14,10 +14,12 @@ from .const import (
     CONF_NAME,
     CONF_PORT,
     CONF_UPDATE_INTERVAL,
+    CONF_VERSION,
     DEFAULT_PORT,
     DEFAULT_UPDATE_INTERVAL,
     DOMAIN,
     PLATFORMS,
+    PROTO_V1,
 )
 from .coordinator import EwpeCoordinator
 from .device import EwpeDevice
@@ -34,6 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         mac=data[CONF_MAC],
         name=data.get(CONF_NAME) or data[CONF_MAC],
         key=data[CONF_KEY].encode("utf-8"),
+        version=data.get(CONF_VERSION, PROTO_V1),
     )
 
     update_interval = entry.options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)

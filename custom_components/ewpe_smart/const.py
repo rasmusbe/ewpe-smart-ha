@@ -15,8 +15,18 @@ DEFAULT_TIMEOUT = 5.0
 DEFAULT_BROADCAST = "255.255.255.255"
 DEFAULT_SCAN_TIMEOUT = 3.0
 
-# Encryption
+# Encryption — V1 (AES-ECB, original Gree firmware)
 GENERIC_KEY = b"a3K8Bx%2r8Y7#xDh"
+
+# Encryption — V2 (AES-GCM, newer Gree firmware on commercial U-Match,
+# XE7A-style controllers, and recent split units). Devices opt into V2
+# by including a `tag` field next to `pack` in the envelope.
+GENERIC_KEY_V2 = b"{yxAHAY_Lm6pbC/<"
+GCM_NONCE = b"\x54\x40\x78\x44\x49\x67\x5a\x51\x6c\x5e\x63\x13"
+GCM_AAD = b"qualcomm-test"
+
+PROTO_V1 = 1
+PROTO_V2 = 2
 
 # Polling
 DEFAULT_UPDATE_INTERVAL = 30
@@ -34,6 +44,7 @@ CONF_KEY = "key"
 CONF_NAME = "name"
 CONF_UPDATE_INTERVAL = "update_interval"
 CONF_BROADCAST = "broadcast"
+CONF_VERSION = "protocol_version"
 
 # ── Device parameter keys ──────────────────────────────────────────────────
 PARAM_POWER = "Pow"

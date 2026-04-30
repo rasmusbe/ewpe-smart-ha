@@ -3,8 +3,21 @@
 This module deliberately avoids any ``homeassistant`` imports so that it can be
 exercised by a plain pytest run without spinning up Home Assistant.
 
+Two on-the-wire formats are supported:
+
+- **V1** — original Gree firmware. AES-128 ECB + PKCS#7 padding. The envelope
+  carries a single ``pack`` field with the base64 ciphertext.
+- **V2** — newer firmware (commercial U-Match, XE7A controllers, recent split
+  units). AES-128 GCM. The envelope carries ``pack`` (ciphertext) AND ``tag``
+  (16-byte GCM auth tag), each base64-encoded. Uses a different generic key
+  during the bind handshake.
+
+The version is detected automatically from the reply: a ``tag`` field next to
+``pack`` flags V2.
+
 Wire format reference:
 - https://github.com/tomikaa87/gree-remote
+- https://github.com/cmroche/greeclimate
 - https://github.com/stas-demydiuk/ewpe-smart-mqtt
 """
 
@@ -17,15 +30,26 @@ import logging
 import socket
 from typing import Any
 
+from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from .const import DEFAULT_TIMEOUT, GENERIC_KEY
+from .const import (
+    DEFAULT_TIMEOUT,
+    GCM_AAD,
+    GCM_NONCE,
+    GENERIC_KEY,
+    GENERIC_KEY_V2,
+    PROTO_V1,
+    PROTO_V2,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 _BLOCK_BITS = 128  # AES block size in bits, used by PKCS#7 padder
 _BLOCK_BYTES = _BLOCK_BITS // 8
+_GCM_TAG_BYTES = 16
 
 
 class EwpeError(Exception):
@@ -45,13 +69,13 @@ class EwpeAuthError(EwpeError):
 
 
 def _aes_ecb(key: bytes) -> Cipher:
-    # ECB is mandated by the device protocol — the wire format predates
-    # modern cipher modes. We can't pick something safer here.
+    # ECB is mandated by the V1 device protocol — the wire format predates
+    # modern cipher modes. V2 uses GCM via AESGCM below.
     return Cipher(algorithms.AES(key), modes.ECB())  # nosec B305
 
 
 def encrypt(payload: dict[str, Any], key: bytes = GENERIC_KEY) -> str:
-    """AES-128 ECB encrypt ``payload`` and return base64 ASCII."""
+    """V1: AES-128 ECB encrypt ``payload`` and return base64 ASCII."""
     plaintext = json.dumps(payload, separators=(",", ":")).encode("utf-8")
     padder = padding.PKCS7(_BLOCK_BITS).padder()
     padded = padder.update(plaintext) + padder.finalize()
@@ -61,7 +85,7 @@ def encrypt(payload: dict[str, Any], key: bytes = GENERIC_KEY) -> str:
 
 
 def decrypt(ciphertext: str, key: bytes = GENERIC_KEY) -> dict[str, Any]:
-    """Decrypt a base64 AES-128 ECB blob into a JSON object."""
+    """V1: Decrypt a base64 AES-128 ECB blob into a JSON object."""
     raw = base64.b64decode(ciphertext)
     if len(raw) == 0 or len(raw) % _BLOCK_BYTES != 0:
         raise EwpeAuthError("Ciphertext length is not a multiple of block size")
@@ -78,16 +102,70 @@ def decrypt(ciphertext: str, key: bytes = GENERIC_KEY) -> dict[str, Any]:
         raise EwpeAuthError("Decrypted payload is not valid JSON") from err
 
 
-def _outer_packet(inner: dict[str, Any], key: bytes) -> bytes:
-    """Wrap an inner payload in the outer envelope and serialise to bytes."""
-    envelope = {
-        "cid": "app",
-        "i": 1 if key == GENERIC_KEY else 0,
-        "t": "pack",
-        "uid": 0,
-        "tcid": "",
-        "pack": encrypt(inner, key),
-    }
+def encrypt_v2(
+    payload: dict[str, Any], key: bytes = GENERIC_KEY_V2
+) -> tuple[str, str]:
+    """V2: AES-128 GCM encrypt ``payload`` → ``(pack_b64, tag_b64)``."""
+    plaintext = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    aesgcm = AESGCM(key)
+    ct_with_tag = aesgcm.encrypt(GCM_NONCE, plaintext, GCM_AAD)
+    ciphertext = ct_with_tag[:-_GCM_TAG_BYTES]
+    tag = ct_with_tag[-_GCM_TAG_BYTES:]
+    return (
+        base64.b64encode(ciphertext).decode("ascii"),
+        base64.b64encode(tag).decode("ascii"),
+    )
+
+
+def decrypt_v2(
+    pack_b64: str, tag_b64: str, key: bytes = GENERIC_KEY_V2
+) -> dict[str, Any]:
+    """V2: Decrypt a base64 AES-128 GCM (pack, tag) pair into a JSON object."""
+    try:
+        ciphertext = base64.b64decode(pack_b64)
+        tag = base64.b64decode(tag_b64)
+    except (ValueError, TypeError) as err:
+        raise EwpeAuthError("V2 payload is not valid base64") from err
+    aesgcm = AESGCM(key)
+    try:
+        plaintext = aesgcm.decrypt(GCM_NONCE, ciphertext + tag, GCM_AAD)
+    except InvalidTag as err:
+        raise EwpeAuthError("V2 GCM auth tag mismatch (wrong key)") from err
+    text = plaintext.decode("utf-8", errors="replace")
+    # Some V2 firmwares pad the JSON with trailing bytes past the final '}'.
+    last = text.rfind("}")
+    if last >= 0:
+        text = text[: last + 1]
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as err:
+        raise EwpeAuthError("Decrypted V2 payload is not valid JSON") from err
+
+
+def _outer_packet(
+    inner: dict[str, Any], key: bytes, version: int = PROTO_V1
+) -> bytes:
+    """Wrap ``inner`` in the outer envelope and serialise to bytes."""
+    if version == PROTO_V2:
+        pack, tag = encrypt_v2(inner, key)
+        envelope: dict[str, Any] = {
+            "cid": "app",
+            "i": 1 if key == GENERIC_KEY_V2 else 0,
+            "t": "pack",
+            "uid": 0,
+            "tcid": "",
+            "pack": pack,
+            "tag": tag,
+        }
+    else:
+        envelope = {
+            "cid": "app",
+            "i": 1 if key == GENERIC_KEY else 0,
+            "t": "pack",
+            "uid": 0,
+            "tcid": "",
+            "pack": encrypt(inner, key),
+        }
     return json.dumps(envelope, separators=(",", ":")).encode("utf-8")
 
 
@@ -131,40 +209,51 @@ async def send_request(
     key: bytes,
     payload: dict[str, Any],
     timeout: float = DEFAULT_TIMEOUT,
+    version: int = PROTO_V1,
 ) -> dict[str, Any]:
-    """Send an encrypted request to ``host:port`` and return the decrypted reply.
+    """Send an encrypted request and return the decrypted reply.
 
-    The reply ``pack`` field is decrypted with the same ``key`` that was used to
-    encrypt the request. Mismatched keys raise :class:`EwpeAuthError`.
+    The reply ``pack`` field is decrypted with the same ``key`` and
+    ``version`` used to encrypt the request. Mismatches raise
+    :class:`EwpeAuthError`.
     """
-    return await _send_raw(
-        host, port, _outer_packet(payload, key), reply_key=key, timeout=timeout
+    inner, _v = await _send_raw(
+        host,
+        port,
+        _outer_packet(payload, key, version),
+        reply_key=key,
+        reply_version=version,
+        timeout=timeout,
     )
+    return inner
 
 
 async def unicast_scan(
     host: str, port: int, timeout: float = DEFAULT_TIMEOUT
-) -> dict[str, Any]:
-    """Send a raw (unencrypted) scan packet to one host and return the dev reply.
+) -> tuple[dict[str, Any], int]:
+    """Send a raw scan to one host and return ``(dev_reply, version)``.
 
-    The reference EWPE Smart wire format treats the scan packet specially —
-    devices reply only when the scan is sent as raw JSON (no outer envelope,
-    no encryption). The reply itself is wrapped in the standard envelope with
-    its ``pack`` field encrypted using the generic key.
+    Both V1 and V2 devices accept the raw ``{"t":"scan"}`` JSON. The reply
+    envelope tells us which protocol the device speaks: a ``tag`` field next
+    to ``pack`` flags V2 (AES-GCM), otherwise V1 (AES-ECB). The matching
+    generic key is used to decrypt ``pack``.
     """
     raw = json.dumps({"t": "scan"}, separators=(",", ":")).encode("utf-8")
     _LOGGER.debug("Sending raw unicast scan to %s:%s", host, port)
-    return await _send_raw(host, port, raw, reply_key=GENERIC_KEY, timeout=timeout)
+    return await _send_raw(
+        host, port, raw, reply_key=None, reply_version=None, timeout=timeout
+    )
 
 
 async def _send_raw(
     host: str,
     port: int,
     packet: bytes,
-    reply_key: bytes,
+    reply_key: bytes | None,
+    reply_version: int | None,
     timeout: float,
-) -> dict[str, Any]:
-    """Open an ephemeral socket, send ``packet`` once, decrypt the first reply."""
+) -> tuple[dict[str, Any], int]:
+    """Open an ephemeral socket, send ``packet`` once, parse the first reply."""
     loop = asyncio.get_running_loop()
     transport, protocol = await loop.create_datagram_endpoint(
         _RequestProtocol, remote_addr=(host, port)
@@ -177,17 +266,40 @@ async def _send_raw(
             raise EwpeTimeout(f"No reply from {host}:{port} in {timeout}s") from err
     finally:
         transport.close()
-    return _parse_reply(data, reply_key)
+    return _parse_reply(data, reply_key, reply_version)
 
 
-def _parse_reply(data: bytes, key: bytes) -> dict[str, Any]:
+def _parse_reply(
+    data: bytes,
+    key: bytes | None = None,
+    version: int | None = None,
+) -> tuple[dict[str, Any], int]:
+    """Parse and decrypt a reply envelope.
+
+    If ``key`` and ``version`` are both ``None`` (the scan path), the version
+    is auto-detected from the envelope and the matching generic key is used.
+    Otherwise the caller commits to a specific version/key (used for status
+    and cmd against an already-bound device).
+    """
     try:
         envelope = json.loads(data.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as err:
         raise EwpeProtocolError("Reply is not valid JSON") from err
     if "pack" not in envelope:
         raise EwpeProtocolError(f"Reply has no 'pack' field: {envelope!r}")
-    return decrypt(envelope["pack"], key)
+
+    detected = PROTO_V2 if "tag" in envelope else PROTO_V1
+    use_version = version if version is not None else detected
+    if key is not None:
+        use_key = key
+    else:
+        use_key = GENERIC_KEY_V2 if use_version == PROTO_V2 else GENERIC_KEY
+
+    if use_version == PROTO_V2:
+        if "tag" not in envelope:
+            raise EwpeProtocolError("V2 reply missing 'tag' field")
+        return decrypt_v2(envelope["pack"], envelope["tag"], use_key), PROTO_V2
+    return decrypt(envelope["pack"], use_key), PROTO_V1
 
 
 async def scan(
@@ -195,7 +307,11 @@ async def scan(
     port: int,
     timeout: float,
 ) -> list[dict[str, Any]]:
-    """Broadcast a scan packet and return decrypted ``dev`` replies."""
+    """Broadcast a scan packet and return decrypted ``dev`` replies.
+
+    Each returned dict carries a ``_version`` key (PROTO_V1 or PROTO_V2) so
+    the config flow knows how to bind to the chosen device.
+    """
     loop = asyncio.get_running_loop()
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -215,10 +331,11 @@ async def scan(
     devices: list[dict[str, Any]] = []
     for data, (addr, _port) in protocol.replies:
         try:
-            inner = _parse_reply(data, GENERIC_KEY)
+            inner, version = _parse_reply(data)
         except EwpeError as err:
             _LOGGER.debug("Ignoring scan reply from %s: %s", addr, err)
             continue
         inner.setdefault("address", addr)
+        inner["_version"] = version
         devices.append(inner)
     return devices

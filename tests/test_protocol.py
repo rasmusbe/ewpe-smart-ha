@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import pytest
 
+from custom_components.ewpe_smart.const import GENERIC_KEY_V2
 from custom_components.ewpe_smart.protocol import (
     EwpeAuthError,
     decrypt,
+    decrypt_v2,
     encrypt,
+    encrypt_v2,
 )
 
 
@@ -40,3 +43,39 @@ def test_encrypt_produces_ascii_base64() -> None:
     cipher = encrypt(payload)
     cipher.encode("ascii")  # would raise UnicodeEncodeError on non-ASCII
     assert len(cipher) % 4 == 0
+
+
+# ── V2 (AES-GCM) ──────────────────────────────────────────────────────────
+
+
+def test_v2_encrypt_decrypt_roundtrip_default_key() -> None:
+    payload = {"t": "scan"}
+    pack, tag = encrypt_v2(payload)
+    assert decrypt_v2(pack, tag) == payload
+
+
+def test_v2_encrypt_decrypt_roundtrip_device_key() -> None:
+    key = b"abcdefghijklmnop"
+    payload = {"mac": "AA:BB:CC:DD:EE:FF", "t": "bind", "uid": 0}
+    pack, tag = encrypt_v2(payload, key)
+    assert decrypt_v2(pack, tag, key) == payload
+
+
+def test_v2_decrypt_with_wrong_key_raises_auth_error() -> None:
+    pack, tag = encrypt_v2({"t": "scan"}, GENERIC_KEY_V2)
+    with pytest.raises(EwpeAuthError):
+        decrypt_v2(pack, tag, b"0123456789abcdef")
+
+
+def test_v2_decrypt_with_tampered_tag_raises_auth_error() -> None:
+    pack, _tag = encrypt_v2({"t": "scan"})
+    with pytest.raises(EwpeAuthError):
+        decrypt_v2(pack, "AAAAAAAAAAAAAAAAAAAAAA==")
+
+
+def test_v2_encrypt_produces_two_separate_b64_strings() -> None:
+    pack, tag = encrypt_v2({"t": "scan"})
+    pack.encode("ascii")
+    tag.encode("ascii")
+    # GCM tag is always 16 bytes → 24 chars base64 (with padding)
+    assert len(tag) == 24

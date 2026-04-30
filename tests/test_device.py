@@ -11,6 +11,7 @@ import asyncio
 
 import pytest
 
+from custom_components.ewpe_smart.const import PROTO_V1, PROTO_V2
 from custom_components.ewpe_smart.device import EwpeDevice
 from custom_components.ewpe_smart.protocol import (
     EwpeError,
@@ -25,15 +26,28 @@ pytestmark = pytest.mark.usefixtures("socket_enabled")
 
 
 @pytest.mark.asyncio
-async def test_unicast_scan_returns_dev_reply() -> None:
+async def test_unicast_scan_returns_dev_reply_and_v1_version() -> None:
     """Unicast scan must be sent as raw JSON and return the decrypted dev info."""
     mock, port = await start_mock_device()
 
-    reply = await unicast_scan("127.0.0.1", port, timeout=2.0)
+    reply, version = await unicast_scan("127.0.0.1", port, timeout=2.0)
 
+    assert version == PROTO_V1
     assert reply["t"] == "dev"
     assert reply["mac"] == mock.mac
     assert reply["name"] == mock.name
+
+
+@pytest.mark.asyncio
+async def test_unicast_scan_detects_v2_from_reply_tag() -> None:
+    """A V2-speaking device replies with a 'tag' field; scan auto-detects V2."""
+    mock, port = await start_mock_device(protocol_version=PROTO_V2)
+
+    reply, version = await unicast_scan("127.0.0.1", port, timeout=2.0)
+
+    assert version == PROTO_V2
+    assert reply["t"] == "dev"
+    assert reply["mac"] == mock.mac
 
 
 @pytest.mark.asyncio
@@ -115,3 +129,37 @@ async def test_concurrent_calls_do_not_cross_replies() -> None:
     )
     for r in results:
         assert r["Pow"] == 1
+
+
+@pytest.mark.asyncio
+async def test_v2_device_full_lifecycle() -> None:
+    """A V2 mock device walks through bind → status → set_state successfully."""
+    mock, port = await start_mock_device(protocol_version=PROTO_V2)
+    device = EwpeDevice(host="127.0.0.1", port=port, timeout=2.0)
+
+    await device.bind()
+    assert device.version == PROTO_V2
+    assert device.mac == mock.mac
+    assert device.key == mock.device_key
+
+    status = await device.get_status()
+    assert status["Pow"] == 1
+    assert status["TemSen"] == 25
+
+    result = await device.set_state({"Pow": 0, "SetTem": 23})
+    assert result == {"Pow": 0, "SetTem": 23}
+    assert mock.status["SetTem"] == 23
+    assert mock.status["Pow"] == 0
+
+
+@pytest.mark.asyncio
+async def test_v2_bind_uses_v2_generic_key() -> None:
+    """Bind to a V2 device must use the V2 generic key, not V1."""
+    mock, port = await start_mock_device(protocol_version=PROTO_V2)
+    device = EwpeDevice(host="127.0.0.1", port=port, timeout=2.0)
+
+    # If the V1 key were sent, the mock would fail to decrypt and never reply
+    # with a bindok — this would surface as a timeout.
+    await device.bind()
+
+    assert device.key == mock.device_key

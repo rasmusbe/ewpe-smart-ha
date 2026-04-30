@@ -22,6 +22,7 @@ from .const import (
     CONF_NAME,
     CONF_PORT,
     CONF_UPDATE_INTERVAL,
+    CONF_VERSION,
     DEFAULT_BROADCAST,
     DEFAULT_PORT,
     DEFAULT_SCAN_TIMEOUT,
@@ -29,6 +30,7 @@ from .const import (
     DOMAIN,
     MAX_UPDATE_INTERVAL,
     MIN_UPDATE_INTERVAL,
+    PROTO_V1,
 )
 from .device import (
     EwpeAuthError,
@@ -42,9 +44,16 @@ from .device import (
 _LOGGER = logging.getLogger(__name__)
 
 
-async def _bind_device(host: str) -> EwpeDevice:
-    """Instantiate an :class:`EwpeDevice` and run the bind handshake."""
+async def _bind_device(host: str, version: int | None = None) -> EwpeDevice:
+    """Instantiate an :class:`EwpeDevice` and run the bind handshake.
+
+    When ``version`` is supplied (from a prior scan reply) the device skips
+    auto-detection and uses that protocol immediately. Otherwise it falls
+    through unicast scan first.
+    """
     device = EwpeDevice(host=host)
+    if version is not None:
+        device.version = version
     await device.bind()
     return device
 
@@ -94,6 +103,7 @@ class EwpeSmartConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_MAC: device.mac,
                         CONF_KEY: device.key.decode("utf-8"),
                         CONF_NAME: title,
+                        CONF_VERSION: device.version,
                     },
                 )
 
@@ -150,8 +160,16 @@ class EwpeSmartConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             host = user_input[CONF_HOST]
+            scan_version = next(
+                (
+                    d.get("_version", PROTO_V1)
+                    for d in getattr(self, "_discovered", [])
+                    if d.get("address") == host
+                ),
+                None,
+            )
             try:
-                device = await _bind_device(host)
+                device = await _bind_device(host, version=scan_version)
             except EwpeError:
                 errors["base"] = "cannot_connect"
             else:
@@ -166,6 +184,7 @@ class EwpeSmartConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_MAC: device.mac,
                         CONF_KEY: device.key.decode("utf-8"),
                         CONF_NAME: title,
+                        CONF_VERSION: device.version,
                     },
                 )
 
@@ -200,6 +219,7 @@ class EwpeSmartConfigFlow(ConfigFlow, domain=DOMAIN):
                     data={
                         **self._reauth_entry.data,
                         CONF_KEY: device.key.decode("utf-8"),
+                        CONF_VERSION: device.version,
                     },
                 )
                 await self.hass.config_entries.async_reload(self._reauth_entry.entry_id)
