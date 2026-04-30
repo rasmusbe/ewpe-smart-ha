@@ -58,20 +58,14 @@ class MockEwpeProtocol(asyncio.DatagramProtocol):
         return GENERIC_KEY_V2 if self.protocol_version == PROTO_V2 else GENERIC_KEY
 
     def _decrypt_inbound(self, envelope: dict[str, Any]) -> dict[str, Any]:
-        key = (
-            self._generic_key
-            if envelope.get("i") == 1
-            else self.device_key
-        )
+        key = self._generic_key if envelope.get("i") == 1 else self.device_key
         if "tag" in envelope:
             return decrypt_v2(envelope["pack"], envelope["tag"], key)
         return decrypt(envelope["pack"], key)
 
     def _build_envelope(self, reply: dict[str, Any]) -> dict[str, Any]:
         out_key = (
-            self.device_key
-            if reply.get("t") in {"dat", "res"}
-            else self._generic_key
+            self.device_key if reply.get("t") in {"dat", "res"} else self._generic_key
         )
         i_field = 0 if reply.get("t") in {"dat", "res"} else 1
         if self.protocol_version == PROTO_V2:

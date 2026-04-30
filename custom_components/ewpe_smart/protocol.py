@@ -102,9 +102,7 @@ def decrypt(ciphertext: str, key: bytes = GENERIC_KEY) -> dict[str, Any]:
         raise EwpeAuthError("Decrypted payload is not valid JSON") from err
 
 
-def encrypt_v2(
-    payload: dict[str, Any], key: bytes = GENERIC_KEY_V2
-) -> tuple[str, str]:
+def encrypt_v2(payload: dict[str, Any], key: bytes = GENERIC_KEY_V2) -> tuple[str, str]:
     """V2: AES-128 GCM encrypt ``payload`` → ``(pack_b64, tag_b64)``."""
     plaintext = json.dumps(payload, separators=(",", ":")).encode("utf-8")
     aesgcm = AESGCM(key)
@@ -142,9 +140,7 @@ def decrypt_v2(
         raise EwpeAuthError("Decrypted V2 payload is not valid JSON") from err
 
 
-def _outer_packet(
-    inner: dict[str, Any], key: bytes, version: int = PROTO_V1
-) -> bytes:
+def _outer_packet(inner: dict[str, Any], key: bytes, version: int = PROTO_V1) -> bytes:
     """Wrap ``inner`` in the outer envelope and serialise to bytes."""
     if version == PROTO_V2:
         pack, tag = encrypt_v2(inner, key)

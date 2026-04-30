@@ -87,9 +87,7 @@ class EwpeDevice:
         _LOGGER.info(
             "Discovering device on %s:%s via unicast scan", self.host, self.port
         )
-        reply, version = await unicast_scan(
-            self.host, self.port, timeout=self.timeout
-        )
+        reply, version = await unicast_scan(self.host, self.port, timeout=self.timeout)
         if reply.get("t") != "dev":
             raise EwpeProtocolError(f"Unexpected scan reply: {reply!r}")
         mac = reply.get("cid") or reply.get("mac")
