@@ -7,7 +7,12 @@ from homeassistant.const import Platform
 DOMAIN = "ewpe_smart"
 MANUFACTURER = "Gree (EWPE Smart)"
 
-PLATFORMS: list[Platform] = [Platform.CLIMATE, Platform.SENSOR, Platform.SWITCH]
+PLATFORMS: list[Platform] = [
+    Platform.CLIMATE,
+    Platform.SENSOR,
+    Platform.SELECT,
+    Platform.SWITCH,
+]
 
 # Network
 DEFAULT_PORT = 7000
@@ -34,7 +39,7 @@ DEFAULT_UPDATE_INTERVAL = 30
 MIN_UPDATE_INTERVAL = 10
 MAX_UPDATE_INTERVAL = 300
 
-# Indoor temperature sensor offset
+# Temperature sensor offset applied to raw wire values (TemSen, OutEnvTem, …)
 TEMP_SENSOR_OFFSET = -40
 
 # Config entry keys
@@ -64,6 +69,22 @@ PARAM_LIG = "Lig"
 PARAM_SVST = "SvSt"
 PARAM_AIR = "Air"
 
+PARAM_SWING_HORIZONTAL = "SwingLfRig"
+PARAM_SWING_VERTICAL = "SwUpDn"
+PARAM_SLEEP_MODE = "SlpMod"
+PARAM_ANTI_DIRECT_BLOW = "AntiDirectBlow"
+PARAM_SENSOR_LIGHT = "LigSen"
+PARAM_OUTDOOR_TEMP = "OutEnvTem"
+PARAM_HUMIDITY = "DwatSen"
+PARAM_FAULT = "FaultDisplay"
+PARAM_SMART_HEAT_8C = "StHt"
+PARAM_BEEPER = "Buzzer_ON_OFF"
+
+# Probe discovery only — no entities
+PARAM_TEMP_REC = "TemRec"
+PARAM_BEEPER_NEW = "BuzzerCtrl"
+PARAM_HEAT_COOL_TYPE = "HeatCoolType"
+
 SWITCH_PARAMS: list[str] = [
     PARAM_SLEEP,
     PARAM_TUR,
@@ -73,6 +94,22 @@ SWITCH_PARAMS: list[str] = [
     PARAM_LIG,
     PARAM_SVST,
     PARAM_AIR,
+    PARAM_SLEEP_MODE,
+    PARAM_ANTI_DIRECT_BLOW,
+    PARAM_SENSOR_LIGHT,
+    PARAM_SMART_HEAT_8C,
+    PARAM_BEEPER,
+]
+
+SELECT_PARAMS: list[str] = [
+    PARAM_SWING_HORIZONTAL,
+    PARAM_SWING_VERTICAL,
+]
+
+SENSOR_PARAMS: list[str] = [
+    PARAM_OUTDOOR_TEMP,
+    PARAM_HUMIDITY,
+    PARAM_FAULT,
 ]
 
 STATUS_PARAMS: list[str] = [
@@ -83,7 +120,17 @@ STATUS_PARAMS: list[str] = [
     PARAM_FAN_SPEED,
     PARAM_TEMP_SENSOR,
     *SWITCH_PARAMS,
+    *SELECT_PARAMS,
+    *SENSOR_PARAMS,
 ]
+
+DISCOVERY_ONLY_PARAMS: list[str] = [
+    PARAM_TEMP_REC,
+    PARAM_BEEPER_NEW,
+    PARAM_HEAT_COOL_TYPE,
+]
+
+DISCOVERY_PARAMS: list[str] = [*STATUS_PARAMS, *DISCOVERY_ONLY_PARAMS]
 
 # ── Value mappings ─────────────────────────────────────────────────────────
 POWER_OFF = 0
@@ -99,6 +146,31 @@ FAN_SPEED_AUTO = 0
 FAN_SPEED_LOW = 1
 FAN_SPEED_MEDIUM = 3
 FAN_SPEED_HIGH = 5
+
+SWING_HORIZONTAL_DEVICE_TO_OPTION: dict[int, str] = {
+    0: "default",
+    1: "full_swing",
+    2: "left",
+    3: "left_center",
+    4: "center",
+    5: "right_center",
+    6: "right",
+}
+
+SWING_VERTICAL_DEVICE_TO_OPTION: dict[int, str] = {
+    0: "default",
+    1: "full_swing",
+    2: "fixed_upper",
+    3: "fixed_upper_middle",
+    4: "fixed_middle",
+    5: "fixed_lower_middle",
+    6: "fixed_lower",
+    7: "swing_upper",
+    8: "swing_upper_middle",
+    9: "swing_middle",
+    10: "swing_lower_middle",
+    11: "swing_lower",
+}
 
 # Temperature limits
 MIN_TEMP = 16

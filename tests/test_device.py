@@ -144,6 +144,28 @@ async def test_get_status_returns_decoded_dict_with_temp_offset() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_status_decodes_outdoor_temperature_offset() -> None:
+    mock, port = await start_mock_device(
+        status={
+            "Pow": 1,
+            "Mod": 1,
+            "SetTem": 22,
+            "TemUn": 0,
+            "WdSpd": 0,
+            "TemSen": 65,
+            "OutEnvTem": 62,
+        }
+    )
+    device = EwpeDevice(host="127.0.0.1", port=port, timeout=2.0)
+    await device.bind()
+
+    status = await device.get_status()
+
+    assert status["OutEnvTem"] == 22
+    assert mock.mac == device.mac
+
+
+@pytest.mark.asyncio
 async def test_set_state_round_trip() -> None:
     mock, port = await start_mock_device()
     device = EwpeDevice(host="127.0.0.1", port=port, timeout=2.0)

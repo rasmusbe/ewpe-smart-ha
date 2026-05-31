@@ -17,11 +17,16 @@ from .const import (
     DOMAIN,
     MANUFACTURER,
     PARAM_AIR,
+    PARAM_ANTI_DIRECT_BLOW,
+    PARAM_BEEPER,
     PARAM_BLO,
     PARAM_HEALTH,
     PARAM_LIG,
     PARAM_QUIET,
+    PARAM_SENSOR_LIGHT,
     PARAM_SLEEP,
+    PARAM_SLEEP_MODE,
+    PARAM_SMART_HEAT_8C,
     PARAM_SVST,
     PARAM_TUR,
     POWER_OFF,
@@ -67,6 +72,31 @@ SWITCH_DESCRIPTIONS: tuple[EwpeSwitchDescription, ...] = (
     ),
     EwpeSwitchDescription(
         param=PARAM_AIR, unique_id_suffix="fresh_air", translation_key="fresh_air"
+    ),
+    EwpeSwitchDescription(
+        param=PARAM_SLEEP_MODE,
+        unique_id_suffix="sleep_mode",
+        translation_key="sleep_mode",
+    ),
+    EwpeSwitchDescription(
+        param=PARAM_ANTI_DIRECT_BLOW,
+        unique_id_suffix="anti_direct_blow",
+        translation_key="anti_direct_blow",
+    ),
+    EwpeSwitchDescription(
+        param=PARAM_SENSOR_LIGHT,
+        unique_id_suffix="sensor_light",
+        translation_key="sensor_light",
+    ),
+    EwpeSwitchDescription(
+        param=PARAM_SMART_HEAT_8C,
+        unique_id_suffix="smart_heat_8c",
+        translation_key="smart_heat_8c",
+    ),
+    EwpeSwitchDescription(
+        param=PARAM_BEEPER,
+        unique_id_suffix="beeper",
+        translation_key="beeper",
     ),
 )
 

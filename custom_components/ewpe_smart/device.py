@@ -12,6 +12,7 @@ from .const import (
     DEFAULT_TIMEOUT,
     GENERIC_KEY,
     GENERIC_KEY_V2,
+    PARAM_OUTDOOR_TEMP,
     PARAM_TEMP_SENSOR,
     STATUS_PARAMS,
     PROTO_V1,
@@ -196,10 +197,9 @@ class EwpeDevice:
         ):
             raise EwpeProtocolError(f"Status reply is malformed: {reply!r}")
         status = dict(zip(reply["cols"], reply["dat"], strict=False))
-        if PARAM_TEMP_SENSOR in status:
-            status[PARAM_TEMP_SENSOR] = (
-                int(status[PARAM_TEMP_SENSOR]) + TEMP_SENSOR_OFFSET
-            )
+        for param in (PARAM_TEMP_SENSOR, PARAM_OUTDOOR_TEMP):
+            if param in status:
+                status[param] = int(status[param]) + TEMP_SENSOR_OFFSET
         return status
 
     async def set_state(self, params: dict[str, int]) -> dict[str, int]:

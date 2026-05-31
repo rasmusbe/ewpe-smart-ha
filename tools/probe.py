@@ -36,7 +36,7 @@ V2_KEY = b"{yxAHAY_Lm6pbC/<"
 V2_NONCE = b"\x54\x40\x78\x44\x49\x67\x5a\x51\x6c\x5e\x63\x13"
 V2_AAD = b"qualcomm-test"
 
-# Keep in sync with custom_components/ewpe_smart/const.py STATUS_PARAMS
+# Keep in sync with custom_components/ewpe_smart/const.py
 STATUS_PARAMS = [
     "Pow",
     "Mod",
@@ -52,6 +52,40 @@ STATUS_PARAMS = [
     "Lig",
     "SvSt",
     "Air",
+    "SlpMod",
+    "AntiDirectBlow",
+    "LigSen",
+    "SwingLfRig",
+    "SwUpDn",
+    "OutEnvTem",
+    "DwatSen",
+    "FaultDisplay",
+    "StHt",
+    "Buzzer_ON_OFF",
+]
+
+DISCOVERY_ONLY_PARAMS = [
+    "TemRec",
+    "BuzzerCtrl",
+    "HeatCoolType",
+]
+
+DISCOVERY_PARAMS = [*STATUS_PARAMS, *DISCOVERY_ONLY_PARAMS]
+
+SWITCH_PARAMS = [
+    "SwhSlp",
+    "Tur",
+    "Quiet",
+    "Blo",
+    "Health",
+    "Lig",
+    "SvSt",
+    "Air",
+    "SlpMod",
+    "AntiDirectBlow",
+    "LigSen",
+    "StHt",
+    "Buzzer_ON_OFF",
 ]
 
 
@@ -332,15 +366,22 @@ def probe(ip: str, decrypt: bool, do_bind: bool) -> int:
         sock.close()
 
 
-def cmd_status(ip: str, key: str, mac: str, version: int | None) -> int:
+def cmd_status(
+    ip: str, key: str, mac: str, version: int | None, *, runtime: bool = False
+) -> int:
     device_key = key.encode("utf-8")
+    request_cols = STATUS_PARAMS if runtime else DISCOVERY_PARAMS
+    mode_label = "runtime" if runtime else "discovery"
     version_label = f"v{version}" if version else "auto"
-    print(f"[{ip}] → status request ({len(STATUS_PARAMS)} cols, proto {version_label})")
+    print(
+        f"[{ip}] → status request ({len(request_cols)} cols, {mode_label}, "
+        f"proto {version_label})"
+    )
     try:
         reply = _send_request_auto(
             ip,
             device_key,
-            {"t": "status", "mac": mac, "cols": STATUS_PARAMS},
+            {"t": "status", "mac": mac, "cols": request_cols},
             mac=mac,
             version=version,
         )
@@ -360,11 +401,16 @@ def cmd_status(ip: str, key: str, mac: str, version: int | None) -> int:
     print(f"[{ip}]   cols ({len(cols)}): {cols}")
     for name, value in zip(cols, dat, strict=False):
         print(f"[{ip}]     {name} = {value}")
-    switch_cols = [c for c in cols if c in STATUS_PARAMS[6:]]
+    switch_cols = [c for c in cols if c in SWITCH_PARAMS]
     if switch_cols:
         print(f"[{ip}]   supported switches: {', '.join(switch_cols)}")
     else:
         print(f"[{ip}]   supported switches: (none in reply)")
+    discovery_cols = [c for c in cols if c in DISCOVERY_ONLY_PARAMS]
+    if discovery_cols:
+        print(f"[{ip}]   discovery params in reply: {', '.join(discovery_cols)}")
+    elif not runtime:
+        print(f"[{ip}]   discovery params in reply: (none)")
     return 0
 
 
@@ -467,6 +513,11 @@ def main(argv: list[str]) -> int:
 
     status_parser = subparsers.add_parser("status", help="Read device status")
     _add_device_args(status_parser)
+    status_parser.add_argument(
+        "--runtime",
+        action="store_true",
+        help="Poll STATUS_PARAMS only (integration runtime set); default is discovery",
+    )
 
     set_parser = subparsers.add_parser("set", help="Set device parameters")
     _add_device_args(set_parser)
@@ -488,7 +539,9 @@ def main(argv: list[str]) -> int:
         return rc
 
     if args.command == "status":
-        return cmd_status(args.ip, args.key, args.mac, args.version)
+        return cmd_status(
+            args.ip, args.key, args.mac, args.version, runtime=args.runtime
+        )
 
     try:
         params = _parse_params(args.params)
