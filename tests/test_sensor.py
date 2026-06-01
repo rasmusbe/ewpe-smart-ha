@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from custom_components.ewpe_smart.const import PARAM_FAULT, PARAM_HUMIDITY, PARAM_OUTDOOR_TEMP
+from custom_components.ewpe_smart.const import PARAM_FAULT, PARAM_OUTDOOR_TEMP
 from custom_components.ewpe_smart.sensor import (
     EwpeExtraSensor,
     supported_extra_sensor_descriptions,
@@ -35,25 +35,15 @@ def _make_sensor(param: str, value: int) -> EwpeExtraSensor:
 
 
 def test_supported_extra_sensor_descriptions_filters_by_status_keys() -> None:
-    data = {
-        "Pow": 1,
-        PARAM_OUTDOOR_TEMP: 22,
-        PARAM_HUMIDITY: 45,
-        PARAM_FAULT: 0,
-    }
+    data = {"Pow": 1, PARAM_OUTDOOR_TEMP: 22, PARAM_FAULT: 0}
     descriptions = supported_extra_sensor_descriptions(data)
     params = {d.param for d in descriptions}
-    assert params == {PARAM_OUTDOOR_TEMP, PARAM_HUMIDITY, PARAM_FAULT}
+    assert params == {PARAM_OUTDOOR_TEMP, PARAM_FAULT}
 
 
 def test_outdoor_temperature_reads_decoded_value() -> None:
     entity = _make_sensor(PARAM_OUTDOOR_TEMP, 22)
     assert entity.native_value == 22.0
-
-
-def test_humidity_reads_percent_value() -> None:
-    entity = _make_sensor(PARAM_HUMIDITY, 45)
-    assert entity.native_value == 45.0
 
 
 def test_fault_reads_numeric_code() -> None:

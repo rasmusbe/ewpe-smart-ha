@@ -22,7 +22,6 @@ from .const import (
     DOMAIN,
     MANUFACTURER,
     PARAM_FAULT,
-    PARAM_HUMIDITY,
     PARAM_OUTDOOR_TEMP,
     PARAM_TEMP_SENSOR,
 )
@@ -50,14 +49,6 @@ EXTRA_SENSOR_DESCRIPTIONS: tuple[EwpeSensorDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-    ),
-    EwpeSensorDescription(
-        param=PARAM_HUMIDITY,
-        unique_id_suffix="humidity",
-        translation_key="humidity",
-        device_class=SensorDeviceClass.HUMIDITY,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement="%",
     ),
     EwpeSensorDescription(
         param=PARAM_FAULT,
@@ -155,10 +146,6 @@ class EwpeExtraSensor(_EwpeSensorBase):
             return None
         if self._description.param == PARAM_OUTDOOR_TEMP:
             if not -40 <= value <= 60:
-                return None
-            return float(value)
-        if self._description.param == PARAM_HUMIDITY:
-            if not 0 <= value <= 100:
                 return None
             return float(value)
         return int(value)

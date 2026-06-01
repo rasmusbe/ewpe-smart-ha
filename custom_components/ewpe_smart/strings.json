@@ -57,10 +57,22 @@
   },
   "entity": {
     "select": {
+      "wind_speed": {
+        "name": "Wind speed",
+        "state": {
+          "auto": "Auto",
+          "low": "Low",
+          "medium_low": "Medium low",
+          "medium": "Medium",
+          "medium_high": "Medium high",
+          "high": "High",
+          "quiet": "Quiet",
+          "turbo": "Turbo"
+        }
+      },
       "swing_horizontal": {
         "name": "Horizontal swing",
         "state": {
-          "default": "Default",
           "full_swing": "Full swing",
           "left": "Left",
           "left_center": "Left center",
@@ -72,18 +84,12 @@
       "swing_vertical": {
         "name": "Vertical swing",
         "state": {
-          "default": "Default",
           "full_swing": "Full swing",
           "fixed_upper": "Fixed upper",
           "fixed_upper_middle": "Fixed upper middle",
           "fixed_middle": "Fixed middle",
           "fixed_lower_middle": "Fixed lower middle",
-          "fixed_lower": "Fixed lower",
-          "swing_upper": "Swing upper",
-          "swing_upper_middle": "Swing upper middle",
-          "swing_middle": "Swing middle",
-          "swing_lower_middle": "Swing lower middle",
-          "swing_lower": "Swing lower"
+          "fixed_lower": "Fixed lower"
         }
       }
     },
@@ -94,9 +100,6 @@
       "outdoor_temperature": {
         "name": "Outdoor temperature"
       },
-      "humidity": {
-        "name": "Humidity"
-      },
       "fault": {
         "name": "Fault code"
       }
@@ -104,12 +107,6 @@
     "switch": {
       "sleep": {
         "name": "Sleep"
-      },
-      "turbo": {
-        "name": "Turbo"
-      },
-      "quiet": {
-        "name": "Quiet"
       },
       "xfan": {
         "name": "X-Fan"
@@ -134,9 +131,6 @@
       },
       "sensor_light": {
         "name": "Auto display"
-      },
-      "smart_heat_8c": {
-        "name": "8 °C heat"
       },
       "beeper": {
         "name": "Beeper"

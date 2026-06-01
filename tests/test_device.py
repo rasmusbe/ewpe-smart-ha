@@ -124,7 +124,7 @@ async def test_get_status_omits_unsupported_switch_params_from_mock() -> None:
     assert PARAM_QUIET in status
     assert PARAM_LIG in status
     assert "Tur" not in status
-    assert {d.param for d in descriptions} == {PARAM_QUIET, PARAM_LIG}
+    assert {d.param for d in descriptions} == {PARAM_LIG}
     assert mock.mac == device.mac
 
 

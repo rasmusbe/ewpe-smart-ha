@@ -5,10 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.components.climate import (
-    FAN_AUTO,
-    FAN_HIGH,
-    FAN_LOW,
-    FAN_MEDIUM,
     ClimateEntity,
     ClimateEntityFeature,
     HVACMode,
@@ -22,10 +18,6 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     DOMAIN,
-    FAN_SPEED_AUTO,
-    FAN_SPEED_HIGH,
-    FAN_SPEED_LOW,
-    FAN_SPEED_MEDIUM,
     MANUFACTURER,
     MAX_TEMP,
     MIN_TEMP,
@@ -34,7 +26,6 @@ from .const import (
     MODE_DRY,
     MODE_FAN,
     MODE_HEAT,
-    PARAM_FAN_SPEED,
     PARAM_MODE,
     PARAM_POWER,
     PARAM_SET_TEMP,
@@ -54,14 +45,6 @@ HVAC_MODE_TO_DEVICE: dict[HVACMode, int] = {
 DEVICE_TO_HVAC_MODE: dict[int, HVACMode] = {
     v: k for k, v in HVAC_MODE_TO_DEVICE.items()
 }
-
-FAN_MODE_TO_DEVICE: dict[str, int] = {
-    FAN_AUTO: FAN_SPEED_AUTO,
-    FAN_LOW: FAN_SPEED_LOW,
-    FAN_MEDIUM: FAN_SPEED_MEDIUM,
-    FAN_HIGH: FAN_SPEED_HIGH,
-}
-DEVICE_TO_FAN_MODE: dict[int, str] = {v: k for k, v in FAN_MODE_TO_DEVICE.items()}
 
 
 async def async_setup_entry(
@@ -91,10 +74,8 @@ class EwpeClimateEntity(CoordinatorEntity[EwpeCoordinator], ClimateEntity):
         HVACMode.DRY,
         HVACMode.FAN_ONLY,
     ]
-    _attr_fan_modes = [FAN_AUTO, FAN_LOW, FAN_MEDIUM, FAN_HIGH]
     _attr_supported_features = (
         ClimateEntityFeature.TARGET_TEMPERATURE
-        | ClimateEntityFeature.FAN_MODE
         | ClimateEntityFeature.TURN_ON
         | ClimateEntityFeature.TURN_OFF
     )
@@ -126,13 +107,6 @@ class EwpeClimateEntity(CoordinatorEntity[EwpeCoordinator], ClimateEntity):
         return DEVICE_TO_HVAC_MODE.get(mode)
 
     @property
-    def fan_mode(self) -> str | None:
-        speed = self._data.get(PARAM_FAN_SPEED)
-        if speed is None:
-            return None
-        return DEVICE_TO_FAN_MODE.get(speed)
-
-    @property
     def target_temperature(self) -> float | None:
         value = self._data.get(PARAM_SET_TEMP)
         return float(value) if value is not None else None
@@ -154,12 +128,6 @@ class EwpeClimateEntity(CoordinatorEntity[EwpeCoordinator], ClimateEntity):
         if device_mode is None:
             raise ValueError(f"Unsupported hvac_mode: {hvac_mode}")
         await self._send({PARAM_POWER: POWER_ON, PARAM_MODE: device_mode})
-
-    async def async_set_fan_mode(self, fan_mode: str) -> None:
-        device_speed = FAN_MODE_TO_DEVICE.get(fan_mode)
-        if device_speed is None:
-            raise ValueError(f"Unsupported fan_mode: {fan_mode}")
-        await self._send({PARAM_FAN_SPEED: device_speed})
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         temperature = kwargs.get(ATTR_TEMPERATURE)

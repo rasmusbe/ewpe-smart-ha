@@ -75,12 +75,12 @@ PARAM_SLEEP_MODE = "SlpMod"
 PARAM_ANTI_DIRECT_BLOW = "AntiDirectBlow"
 PARAM_SENSOR_LIGHT = "LigSen"
 PARAM_OUTDOOR_TEMP = "OutEnvTem"
-PARAM_HUMIDITY = "DwatSen"
 PARAM_FAULT = "FaultDisplay"
-PARAM_SMART_HEAT_8C = "StHt"
 PARAM_BEEPER = "Buzzer_ON_OFF"
 
 # Probe discovery only — no entities
+PARAM_SMART_HEAT_8C = "StHt"
+PARAM_HUMIDITY = "DwatSen"
 PARAM_TEMP_REC = "TemRec"
 PARAM_BEEPER_NEW = "BuzzerCtrl"
 PARAM_HEAT_COOL_TYPE = "HeatCoolType"
@@ -97,7 +97,6 @@ SWITCH_PARAMS: list[str] = [
     PARAM_SLEEP_MODE,
     PARAM_ANTI_DIRECT_BLOW,
     PARAM_SENSOR_LIGHT,
-    PARAM_SMART_HEAT_8C,
     PARAM_BEEPER,
 ]
 
@@ -108,7 +107,6 @@ SELECT_PARAMS: list[str] = [
 
 SENSOR_PARAMS: list[str] = [
     PARAM_OUTDOOR_TEMP,
-    PARAM_HUMIDITY,
     PARAM_FAULT,
 ]
 
@@ -125,6 +123,8 @@ STATUS_PARAMS: list[str] = [
 ]
 
 DISCOVERY_ONLY_PARAMS: list[str] = [
+    PARAM_SMART_HEAT_8C,
+    PARAM_HUMIDITY,
     PARAM_TEMP_REC,
     PARAM_BEEPER_NEW,
     PARAM_HEAT_COOL_TYPE,
@@ -144,11 +144,25 @@ MODE_HEAT = 4
 
 FAN_SPEED_AUTO = 0
 FAN_SPEED_LOW = 1
+FAN_SPEED_MEDIUM_LOW = 2
 FAN_SPEED_MEDIUM = 3
+FAN_SPEED_MEDIUM_HIGH = 4
 FAN_SPEED_HIGH = 5
 
+# Quiet is not always binary 0/1 — some firmware reports 2 when quiet is active.
+QUIET_MODE_ON = 2
+
+WIND_SPEED_FAN_TO_OPTION: dict[int, str] = {
+    FAN_SPEED_AUTO: "auto",
+    FAN_SPEED_LOW: "low",
+    FAN_SPEED_MEDIUM_LOW: "medium_low",
+    FAN_SPEED_MEDIUM: "medium",
+    FAN_SPEED_MEDIUM_HIGH: "medium_high",
+    FAN_SPEED_HIGH: "high",
+}
+
+# Horizontal fixed positions match the native app (direction1–5 → wire values 2–6).
 SWING_HORIZONTAL_DEVICE_TO_OPTION: dict[int, str] = {
-    0: "default",
     1: "full_swing",
     2: "left",
     3: "left_center",
@@ -157,19 +171,15 @@ SWING_HORIZONTAL_DEVICE_TO_OPTION: dict[int, str] = {
     6: "right",
 }
 
+# Vertical fixed positions match the native app (direction1–5 → wire values 2–6).
+# Swing variants (7–11) are omitted — they misbehave on some units.
 SWING_VERTICAL_DEVICE_TO_OPTION: dict[int, str] = {
-    0: "default",
     1: "full_swing",
     2: "fixed_upper",
     3: "fixed_upper_middle",
     4: "fixed_middle",
     5: "fixed_lower_middle",
     6: "fixed_lower",
-    7: "swing_upper",
-    8: "swing_upper_middle",
-    9: "swing_middle",
-    10: "swing_lower_middle",
-    11: "swing_lower",
 }
 
 # Temperature limits

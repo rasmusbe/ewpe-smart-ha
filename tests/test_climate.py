@@ -5,17 +5,10 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from homeassistant.components.climate import (
-    FAN_AUTO,
-    FAN_HIGH,
-    FAN_LOW,
-    FAN_MEDIUM,
-    HVACMode,
-)
+from homeassistant.components.climate import HVACMode
 
 from custom_components.ewpe_smart.climate import EwpeClimateEntity
 from custom_components.ewpe_smart.const import (
-    PARAM_FAN_SPEED,
     PARAM_MODE,
     PARAM_POWER,
     PARAM_SET_TEMP,
@@ -64,15 +57,6 @@ def test_modes_map_correctly(device_mode: int, expected: HVACMode) -> None:
     assert entity.hvac_mode == expected
 
 
-@pytest.mark.parametrize(
-    ("speed", "expected"),
-    [(0, FAN_AUTO), (1, FAN_LOW), (3, FAN_MEDIUM), (5, FAN_HIGH)],
-)
-def test_fan_modes_map_correctly(speed: int, expected: str) -> None:
-    entity, _ = _make_entity({"Pow": 1, "Mod": 1, "WdSpd": speed})
-    assert entity.fan_mode == expected
-
-
 def test_target_and_current_temperature() -> None:
     entity, _ = _make_entity({"Pow": 1, "Mod": 1, "SetTem": 23, "TemSen": 25})
     assert entity.target_temperature == 23.0
@@ -103,13 +87,6 @@ async def test_set_hvac_mode_heat_emits_pow_on_and_mode_heat() -> None:
     entity, device = _make_entity({"Pow": 0})
     await entity.async_set_hvac_mode(HVACMode.HEAT)
     device.set_state.assert_awaited_once_with({PARAM_POWER: 1, PARAM_MODE: 4})
-
-
-@pytest.mark.asyncio
-async def test_set_fan_mode_high_emits_wdspd_5() -> None:
-    entity, device = _make_entity({"Pow": 1, "Mod": 1})
-    await entity.async_set_fan_mode(FAN_HIGH)
-    device.set_state.assert_awaited_once_with({PARAM_FAN_SPEED: 5})
 
 
 @pytest.mark.asyncio
