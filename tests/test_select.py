@@ -106,6 +106,11 @@ def test_swing_current_option_maps_device_value() -> None:
         "fixed_middle",
         "fixed_lower_middle",
         "fixed_lower",
+        "swing_upper",
+        "swing_upper_middle",
+        "swing_middle",
+        "swing_lower_middle",
+        "swing_lower",
     }
 
 

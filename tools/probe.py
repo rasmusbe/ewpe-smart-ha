@@ -60,11 +60,11 @@ STATUS_PARAMS = [
     "OutEnvTem",
     "FaultDisplay",
     "Buzzer_ON_OFF",
+    "StHt",
+    "DwatSen",
 ]
 
 DISCOVERY_ONLY_PARAMS = [
-    "StHt",
-    "DwatSen",
     "TemRec",
     "BuzzerCtrl",
     "HeatCoolType",
@@ -84,6 +84,7 @@ SWITCH_PARAMS = [
     "SlpMod",
     "AntiDirectBlow",
     "LigSen",
+    "StHt",
     "Buzzer_ON_OFF",
 ]
 

@@ -89,7 +89,12 @@
           "fixed_upper_middle": "Fixní horní střed",
           "fixed_middle": "Fixní střed",
           "fixed_lower_middle": "Fixní dolní střed",
-          "fixed_lower": "Fixní dole"
+          "fixed_lower": "Fixní dole",
+          "swing_upper": "Kmitání nahoře",
+          "swing_upper_middle": "Kmitání horní střed",
+          "swing_middle": "Kmitání střed",
+          "swing_lower_middle": "Kmitání dolní střed",
+          "swing_lower": "Kmitání dole"
         }
       }
     },
@@ -99,6 +104,9 @@
       },
       "outdoor_temperature": {
         "name": "Venkovní teplota"
+      },
+      "humidity": {
+        "name": "Vlhkost"
       },
       "fault": {
         "name": "Kód poruchy"
@@ -131,6 +139,9 @@
       },
       "sensor_light": {
         "name": "Automatický displej"
+      },
+      "smart_heat_8c": {
+        "name": "Topení 8 °C"
       },
       "beeper": {
         "name": "Pípání"

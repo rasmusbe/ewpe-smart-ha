@@ -25,6 +25,7 @@ from .const import (
     PARAM_SENSOR_LIGHT,
     PARAM_SLEEP,
     PARAM_SLEEP_MODE,
+    PARAM_SMART_HEAT_8C,
     PARAM_SVST,
     POWER_OFF,
     POWER_ON,
@@ -78,6 +79,11 @@ SWITCH_DESCRIPTIONS: tuple[EwpeSwitchDescription, ...] = (
         param=PARAM_SENSOR_LIGHT,
         unique_id_suffix="sensor_light",
         translation_key="sensor_light",
+    ),
+    EwpeSwitchDescription(
+        param=PARAM_SMART_HEAT_8C,
+        unique_id_suffix="smart_heat_8c",
+        translation_key="smart_heat_8c",
     ),
     EwpeSwitchDescription(
         param=PARAM_BEEPER,

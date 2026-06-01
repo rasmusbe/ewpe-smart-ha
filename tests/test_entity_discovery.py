@@ -7,10 +7,12 @@ from custom_components.ewpe_smart.const import (
     PARAM_BEEPER,
     PARAM_FAN_SPEED,
     PARAM_FAULT,
+    PARAM_HUMIDITY,
     PARAM_OUTDOOR_TEMP,
     PARAM_QUIET,
     PARAM_SENSOR_LIGHT,
     PARAM_SLEEP_MODE,
+    PARAM_SMART_HEAT_8C,
     PARAM_SWING_HORIZONTAL,
     PARAM_SWING_VERTICAL,
     PARAM_TUR,
@@ -71,10 +73,11 @@ def test_unit_snapshot_entity_surface() -> None:
     assert PARAM_QUIET in UNIT_STATUS
     assert PARAM_TUR in UNIT_STATUS
     assert selects == {PARAM_SWING_HORIZONTAL, PARAM_SWING_VERTICAL}
-    assert sensors == {PARAM_OUTDOOR_TEMP, PARAM_FAULT}
+    assert sensors == {PARAM_OUTDOOR_TEMP, PARAM_HUMIDITY, PARAM_FAULT}
     assert {
         PARAM_SLEEP_MODE,
         PARAM_ANTI_DIRECT_BLOW,
         PARAM_SENSOR_LIGHT,
+        PARAM_SMART_HEAT_8C,
         PARAM_BEEPER,
     }.issubset(switches)

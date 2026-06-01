@@ -75,12 +75,12 @@ PARAM_SLEEP_MODE = "SlpMod"
 PARAM_ANTI_DIRECT_BLOW = "AntiDirectBlow"
 PARAM_SENSOR_LIGHT = "LigSen"
 PARAM_OUTDOOR_TEMP = "OutEnvTem"
+PARAM_HUMIDITY = "DwatSen"
 PARAM_FAULT = "FaultDisplay"
+PARAM_SMART_HEAT_8C = "StHt"
 PARAM_BEEPER = "Buzzer_ON_OFF"
 
 # Probe discovery only — no entities
-PARAM_SMART_HEAT_8C = "StHt"
-PARAM_HUMIDITY = "DwatSen"
 PARAM_TEMP_REC = "TemRec"
 PARAM_BEEPER_NEW = "BuzzerCtrl"
 PARAM_HEAT_COOL_TYPE = "HeatCoolType"
@@ -97,6 +97,7 @@ SWITCH_PARAMS: list[str] = [
     PARAM_SLEEP_MODE,
     PARAM_ANTI_DIRECT_BLOW,
     PARAM_SENSOR_LIGHT,
+    PARAM_SMART_HEAT_8C,
     PARAM_BEEPER,
 ]
 
@@ -107,6 +108,7 @@ SELECT_PARAMS: list[str] = [
 
 SENSOR_PARAMS: list[str] = [
     PARAM_OUTDOOR_TEMP,
+    PARAM_HUMIDITY,
     PARAM_FAULT,
 ]
 
@@ -123,8 +125,6 @@ STATUS_PARAMS: list[str] = [
 ]
 
 DISCOVERY_ONLY_PARAMS: list[str] = [
-    PARAM_SMART_HEAT_8C,
-    PARAM_HUMIDITY,
     PARAM_TEMP_REC,
     PARAM_BEEPER_NEW,
     PARAM_HEAT_COOL_TYPE,
@@ -172,7 +172,7 @@ SWING_HORIZONTAL_DEVICE_TO_OPTION: dict[int, str] = {
 }
 
 # Vertical fixed positions match the native app (direction1–5 → wire values 2–6).
-# Swing variants (7–11) are omitted — they misbehave on some units.
+# Partial-swing variants (7–11) are experimental — see docs/parameters.md.
 SWING_VERTICAL_DEVICE_TO_OPTION: dict[int, str] = {
     1: "full_swing",
     2: "fixed_upper",
@@ -180,6 +180,11 @@ SWING_VERTICAL_DEVICE_TO_OPTION: dict[int, str] = {
     4: "fixed_middle",
     5: "fixed_lower_middle",
     6: "fixed_lower",
+    7: "swing_upper",
+    8: "swing_upper_middle",
+    9: "swing_middle",
+    10: "swing_lower_middle",
+    11: "swing_lower",
 }
 
 # Temperature limits
