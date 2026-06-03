@@ -24,6 +24,18 @@ import base64
 import json
 import socket
 import sys
+from pathlib import Path
+
+# Allow importing the parameter catalog without Home Assistant installed.
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from custom_components.ewpe_smart.params_catalog import (  # noqa: E402
+    ALL_KNOWN_PARAMS,
+    SWITCH_PARAM_NAMES,
+    param_batches,
+)
 
 PORT = 7000
 TIMEOUT = 5.0
@@ -36,57 +48,24 @@ V2_KEY = b"{yxAHAY_Lm6pbC/<"
 V2_NONCE = b"\x54\x40\x78\x44\x49\x67\x5a\x51\x6c\x5e\x63\x13"
 V2_AAD = b"qualcomm-test"
 
-# Keep in sync with custom_components/ewpe_smart/const.py
-STATUS_PARAMS = [
+# Keep in sync with custom_components/ewpe_smart/params_catalog.py
+DISCOVERY_PARAMS = list(ALL_KNOWN_PARAMS)
+
+# Minimal climate core for quick ``probe.py status --runtime`` checks.
+RUNTIME_PARAMS = [
     "Pow",
     "Mod",
     "SetTem",
     "TemUn",
     "WdSpd",
     "TemSen",
-    "SwhSlp",
-    "Tur",
     "Quiet",
-    "Blo",
-    "Health",
-    "Lig",
-    "SvSt",
-    "Air",
-    "SlpMod",
-    "AntiDirectBlow",
-    "LigSen",
+    "Tur",
     "SwingLfRig",
     "SwUpDn",
-    "OutEnvTem",
-    "FaultDisplay",
-    "Buzzer_ON_OFF",
-    "StHt",
-    "DwatSen",
 ]
 
-DISCOVERY_ONLY_PARAMS = [
-    "TemRec",
-    "BuzzerCtrl",
-    "HeatCoolType",
-]
-
-DISCOVERY_PARAMS = [*STATUS_PARAMS, *DISCOVERY_ONLY_PARAMS]
-
-SWITCH_PARAMS = [
-    "SwhSlp",
-    "Tur",
-    "Quiet",
-    "Blo",
-    "Health",
-    "Lig",
-    "SvSt",
-    "Air",
-    "SlpMod",
-    "AntiDirectBlow",
-    "LigSen",
-    "StHt",
-    "Buzzer_ON_OFF",
-]
+SWITCH_PARAMS = sorted(SWITCH_PARAM_NAMES)
 
 
 def _encrypt_v1(payload: dict, key: bytes = V1_KEY) -> str:
@@ -195,6 +174,7 @@ def _send_request(
     *,
     mac: str,
     timeout: float = TIMEOUT,
+    log: bool = True,
 ) -> dict:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(timeout)
@@ -208,7 +188,8 @@ def _send_request(
             reply = _parse_envelope(envelope, key)
         except Exception as err:
             raise ValueError(f"decrypt failed: {err}") from err
-        print(f"[{ip}] ← reply from {addr[0]}:{addr[1]} (proto v{version})")
+        out = sys.stdout if log else sys.stderr
+        print(f"[{ip}] ← reply from {addr[0]}:{addr[1]} (proto v{version})", file=out)
         return reply
     finally:
         sock.close()
@@ -221,22 +202,24 @@ def _send_request_auto(
     *,
     mac: str,
     version: int | None = None,
+    log: bool = True,
 ) -> dict:
     """Send a device-key request, trying v1 then v2 when version is omitted."""
     versions = (version,) if version is not None else (1, 2)
+    out = sys.stdout if log else sys.stderr
     for idx, try_version in enumerate(versions):
         if version is None and len(versions) > 1:
-            print(f"[{ip}] → trying proto v{try_version}...")
+            print(f"[{ip}] → trying proto v{try_version}...", file=out)
         try:
-            return _send_request(ip, key, inner, try_version, mac=mac)
+            return _send_request(ip, key, inner, try_version, mac=mac, log=log)
         except TimeoutError:
             if version is not None or idx == len(versions) - 1:
                 raise
-            print(f"[{ip}]   ✗ v{try_version}: no reply within {TIMEOUT}s")
+            print(f"[{ip}]   ✗ v{try_version}: no reply within {TIMEOUT}s", file=out)
         except (OSError, json.JSONDecodeError, ValueError) as err:
             if version is not None or idx == len(versions) - 1:
                 raise
-            print(f"[{ip}]   ✗ v{try_version}: {err}")
+            print(f"[{ip}]   ✗ v{try_version}: {err}", file=out)
     raise TimeoutError(f"no reply from {ip} on any protocol version")
 
 
@@ -366,24 +349,52 @@ def probe(ip: str, decrypt: bool, do_bind: bool) -> int:
         sock.close()
 
 
-def cmd_status(
-    ip: str, key: str, mac: str, version: int | None, *, runtime: bool = False
-) -> int:
-    device_key = key.encode("utf-8")
-    request_cols = STATUS_PARAMS if runtime else DISCOVERY_PARAMS
-    mode_label = "runtime" if runtime else "discovery"
-    version_label = f"v{version}" if version else "auto"
-    print(
-        f"[{ip}] → status request ({len(request_cols)} cols, {mode_label}, "
-        f"proto {version_label})"
-    )
-    try:
+def _fetch_status(
+    ip: str,
+    key: bytes,
+    mac: str,
+    cols: list[str],
+    version: int | None,
+    *,
+    log: bool = True,
+) -> tuple[dict[str, int], list[str]]:
+    """Read status, batching ``cols`` when firmware rejects large requests."""
+    merged_status: dict[str, int] = {}
+    merged_cols: list[str] = []
+    for batch in param_batches(cols):
         reply = _send_request_auto(
             ip,
-            device_key,
-            {"t": "status", "mac": mac, "cols": request_cols},
+            key,
+            {"t": "status", "mac": mac, "cols": list(batch)},
             mac=mac,
             version=version,
+            log=log,
+        )
+        if reply.get("t") != "dat":
+            raise ValueError(f"unexpected status reply: {reply!r}")
+        reply_cols = reply.get("cols") or []
+        dat = reply.get("dat") or []
+        merged_cols.extend(reply_cols)
+        merged_status.update(dict(zip(reply_cols, dat, strict=False)))
+    return merged_status, merged_cols
+
+
+def cmd_status(
+    ip: str, key: str, mac: str, version: int | None, *, runtime: bool = False, export_cols: bool = False
+) -> int:
+    device_key = key.encode("utf-8")
+    request_cols = RUNTIME_PARAMS if runtime else DISCOVERY_PARAMS
+    mode_label = "runtime" if runtime else "discovery"
+    version_label = f"v{version}" if version else "auto"
+    out = sys.stderr if export_cols else sys.stdout
+    print(
+        f"[{ip}] → status request ({len(request_cols)} cols, {mode_label}, "
+        f"proto {version_label}, {len(param_batches(request_cols))} batch(es))",
+        file=out,
+    )
+    try:
+        status, cols = _fetch_status(
+            ip, device_key, mac, request_cols, version, log=not export_cols
         )
     except TimeoutError:
         print(f"[{ip}]   ✗ no reply within {TIMEOUT}s on any protocol version")
@@ -392,25 +403,21 @@ def cmd_status(
         print(f"[{ip}]   ✗ status failed: {err}")
         return 2
 
-    if reply.get("t") != "dat":
-        print(f"[{ip}]   ✗ unexpected reply: {reply}")
-        return 3
-
-    cols = reply.get("cols") or []
-    dat = reply.get("dat") or []
+    if export_cols:
+        print(json.dumps(cols, indent=2))
+        unknown = sorted(set(cols) - set(ALL_KNOWN_PARAMS))
+        if unknown:
+            print(f"[{ip}]   cols not in catalog ({len(unknown)}): {unknown}", file=sys.stderr)
+        return 0
     print(f"[{ip}]   cols ({len(cols)}): {cols}")
-    for name, value in zip(cols, dat, strict=False):
+    for name, value in status.items():
         print(f"[{ip}]     {name} = {value}")
     switch_cols = [c for c in cols if c in SWITCH_PARAMS]
     if switch_cols:
         print(f"[{ip}]   supported switches: {', '.join(switch_cols)}")
     else:
         print(f"[{ip}]   supported switches: (none in reply)")
-    discovery_cols = [c for c in cols if c in DISCOVERY_ONLY_PARAMS]
-    if discovery_cols:
-        print(f"[{ip}]   discovery params in reply: {', '.join(discovery_cols)}")
-    elif not runtime:
-        print(f"[{ip}]   discovery params in reply: (none)")
+    print(f"[{ip}]   catalog coverage: {len(cols)}/{len(ALL_KNOWN_PARAMS)} known params")
     return 0
 
 
@@ -516,7 +523,12 @@ def main(argv: list[str]) -> int:
     status_parser.add_argument(
         "--runtime",
         action="store_true",
-        help="Poll STATUS_PARAMS only (integration runtime set); default is discovery",
+        help="Poll runtime core params only; default requests full catalog",
+    )
+    status_parser.add_argument(
+        "--export-cols",
+        action="store_true",
+        help="Print reply cols as JSON (for updating custom_components/ewpe_smart/data/wire_params.json)",
     )
 
     set_parser = subparsers.add_parser("set", help="Set device parameters")
@@ -540,7 +552,12 @@ def main(argv: list[str]) -> int:
 
     if args.command == "status":
         return cmd_status(
-            args.ip, args.key, args.mac, args.version, runtime=args.runtime
+            args.ip,
+            args.key,
+            args.mac,
+            args.version,
+            runtime=args.runtime,
+            export_cols=args.export_cols,
         )
 
     try:

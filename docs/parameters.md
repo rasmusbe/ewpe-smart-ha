@@ -8,16 +8,23 @@ integers unless noted.
 (extended `GreeProp` / swing enums). This integration validates mappings against
 live hardware — see [hardware-notes.md](hardware-notes.md) and [references.md](references.md).
 
-**Polling lists** (defined in `const.py`):
+**Polling lists** (defined in `params_catalog.py`):
 
-- `STATUS_PARAMS` — requested on every coordinator poll and at runtime probe.
-- `DISCOVERY_ONLY_PARAMS` — requested only during probe discovery; not polled
-  at runtime unless promoted to `STATUS_PARAMS`.
-- `DISCOVERY_PARAMS` — union of both; used by `probe.py status` (default).
+- `ALL_KNOWN_PARAMS` — full catalog (**140** keys on reference hardware;
+  maintained in [`wire_params.json`](../custom_components/ewpe_smart/data/wire_params.json)) requested on
+  the first status poll when an integration entry starts (or reloads).
+- `device.supported_params` — the `cols` the device echoed on that discovery
+  poll; used for all subsequent runtime polls.
+- Every wire key in the catalog has an **explicit entity mapping** (climate,
+  switch, select, number, binary sensor, or named sensor). Generic
+  `sensor.<wire_key>` fallback is only used for cols returned by the device
+  that are not listed in `wire_params.json` (under `custom_components/ewpe_smart/data/`).
+- Metadata / string cols (`mac`, `ver`, `host`, …) use **text sensors** when
+  the device echoes non-integer values.
 
-**Transform rule:** temperature-like params `TemSen` and `OutEnvTem` are decoded
-in `device.get_status()` by adding `TEMP_SENSOR_OFFSET` (−40). Entities always
-see Celsius degrees.
+**Transform rule:** temperature-like params listed in `TEMP_OFFSET_PARAMS` are
+decoded in `device.get_status()` by adding `TEMP_SENSOR_OFFSET` (−40). Entities
+always see Celsius degrees.
 
 ---
 
@@ -138,19 +145,35 @@ your firmware.
 
 Each maps to `switch.<name>`. ON = 1, OFF = 0 unless noted.
 
-| Key | Entity name | Translation key | Notes |
-|-----|-------------|-----------------|-------|
-| `SwhSlp` | Sleep | `sleep` | Night/sleep mode flag |
+**One switch per wire key** — if the device echoes several keys that might relate
+to the same feature (for example `BuzzerCtrl` and `Buzzer_ON_OFF`), each gets its
+own switch so you can see which one actually works on your firmware.
+
+| Key(s) | Entity name | Translation key | Notes |
+|--------|-------------|-----------------|-------|
+| `SmartSlpMod` | Smart sleep mode | `smart_slp_mod` | |
+| `SlpMod` | Sleep mode | `slp_mod` | |
+| `SwhSlp` | Sleep mode (legacy) | `swh_slp` | |
+| `Emod` | Economy mode | `emod` | |
+| `SvSt` | Energy save | `svst` | |
+| `NobodySave` | Nobody save | `nobody_save` | |
+| `BuzzerCtrl` | Beeper (BuzzerCtrl) | `buzzer_ctrl` | |
+| `Buzzer_ON_OFF` | Beeper (Buzzer_ON_OFF) | `buzzer_on_off` | |
 | `Blo` | X-Fan | `xfan` | Post-run fan dry |
 | `Health` | Health | `health` | Anion / health mode |
 | `Lig` | Display light | `display_light` | Panel LED |
-| `SvSt` | Energy save | `energy_save` | Power-saving mode |
 | `Air` | Fresh air | `fresh_air` | Fresh-air valve |
-| `SlpMod` | Sleep mode | `sleep_mode` | Separate from `SwhSlp` on some units |
 | `AntiDirectBlow` | Anti direct blow | `anti_direct_blow` | No direct airflow |
 | `LigSen` | Auto display | `sensor_light` | Ambient-light-driven display |
-| `StHt` | 8 °C heat | `smart_heat_8c` | Smart heat / anti-freeze; may have no effect on some units — see [hardware-notes.md](hardware-notes.md) |
-| `Buzzer_ON_OFF` | Beeper | `beeper` | Panel beep on/off |
+| `StHt` | 8 °C heat | `smart_heat_8c` | Smart heat / anti-freeze |
+| `ChildLock` | Child lock | `child_lock` | Panel lock |
+| `AutoClean` | Auto clean | `auto_clean` | Self-clean cycle |
+| `UvcControl` | UV-C control | `uvc_control` | UV sterilisation |
+| `CoolFeel` | Cool feel | `cool_feel` | Feels-like cooling |
+| `SmartWind` | Smart wind | `smart_wind` | Smart airflow |
+| `AutoPowReduce` | Auto power reduce | `auto_pow_reduce` | Automatic power limiting |
+| `UnmanedShutDown` | Unoccupied shutdown | `unoccupied_shutdown` | Auto-off when empty |
+| `TmrOn` / `TmrOff` | Timer on / off | `timer_on` / `timer_off` | Built-in timer flags |
 
 All switches use **hide-when-missing**: the entity exists only if the device
 returns the key in status `cols`.
@@ -161,26 +184,39 @@ returns the key in status `cols`.
 
 | Key | Entity | Transform | Category |
 |-----|--------|-----------|----------|
+| `TemSen` | Indoor temperature | −40 → °C | Measurement |
 | `OutEnvTem` | Outdoor temperature | −40 → °C | Measurement |
 | `DwatSen` | Humidity | Raw 0–100 → % | Measurement |
+| `PM2P5` | PM2.5 | Raw integer | Measurement |
 | `FaultDisplay` | Fault code | Raw integer | Diagnostic |
+| `Dfltr` | Filter status | Raw integer | Diagnostic |
+| `AllErr`, `JFErrorCode`, … | Fault aggregates | Raw integer | Diagnostic |
+| *(unmapped)* | Raw wire key | Raw integer | Diagnostic fallback |
 
-`DwatSen` reports the wire value as a percentage. A persistent **0** often means
-the humidity sensor is not wired or unsupported on that unit — see
-[hardware-notes.md](hardware-notes.md).
+Unmapped parameters in `supported_params` appear as diagnostic sensors named
+after the wire key (for example `sensor.newtimer`).
 
 ---
 
-## Discovery-only parameters
+## Numbers (writable)
 
-Polled during `probe.py status` (default discovery mode) but **not** exposed as
-Home Assistant entities:
+| Key | Entity | Range | Notes |
+|-----|--------|-------|-------|
+| `TmrOnMinLf` / `TmrOffMinLf` | Timer minutes left | 0–1440 | On/off countdown |
+| `TmrLpTms` | Timer loop times | 0–255 | |
+| `UnmanedOffTime` | Unoccupied off time | 0–1440 min | |
+| `Slp1L1`–`Slp1L8`, `Slp1H1`–`Slp1H8` | Sleep curve steps | 16–30 °C | Night temperature profile |
 
-| Key | Name | Notes |
-|-----|------|-------|
-| `TemRec` | Temperature record | Internal; not user-facing |
-| `BuzzerCtrl` | Beeper control (newer key) | Alternative beeper param; absent on tested unit |
-| `HeatCoolType` | Heat/cool type | Internal capability flag |
+---
+
+## Binary sensors (read-only)
+
+| Key | Entity | Notes |
+|-----|--------|-------|
+| `ReplaceHEPA` | Replace HEPA filter | Maintenance alert |
+| `HasTmr` | Has timer | Timer system active |
+| `MicroSen` | Motion | Presence / motion flag |
+| `Dpump` | Drain pump | Drain pump running |
 
 ---
 
@@ -203,14 +239,15 @@ not change behaviour — see [hardware-notes.md](hardware-notes.md).
 ## Parameter groups in code
 
 ```text
-STATUS_PARAMS =
-  climate core (Pow, Mod, SetTem, TemUn, WdSpd, TemSen)
-  + SWITCH_PARAMS (incl. StHt)
-  + SELECT_PARAMS (SwingLfRig, SwUpDn)
-  + SENSOR_PARAMS (OutEnvTem, DwatSen, FaultDisplay)
+params_catalog.py
+  ALL_KNOWN_PARAMS     — requested on first poll / probe status (default)
+  SWITCH_DESCRIPTIONS  — one switch per wire key
+  EXTRA_SENSOR_DESCRIPTIONS, BINARY_SENSOR_DESCRIPTIONS, NUMBER_DESCRIPTIONS
+  diagnostic_params()  — unmapped supported keys → raw diagnostic sensors
 
-DISCOVERY_ONLY_PARAMS =
-  TemRec, BuzzerCtrl, HeatCoolType
+device.py
+  supported_params     — cached reply cols after first full-catalog poll
+  runtime polls        — poll_params(supported_params)
 ```
 
 ---

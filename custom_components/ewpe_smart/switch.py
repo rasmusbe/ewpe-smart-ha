@@ -13,91 +13,33 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import (
-    DOMAIN,
-    MANUFACTURER,
-    PARAM_AIR,
-    PARAM_ANTI_DIRECT_BLOW,
-    PARAM_BEEPER,
-    PARAM_BLO,
-    PARAM_HEALTH,
-    PARAM_LIG,
-    PARAM_SENSOR_LIGHT,
-    PARAM_SLEEP,
-    PARAM_SLEEP_MODE,
-    PARAM_SMART_HEAT_8C,
-    PARAM_SVST,
-    POWER_OFF,
-    POWER_ON,
-)
+from .const import DOMAIN, MANUFACTURER, POWER_OFF, POWER_ON
 from .coordinator import EwpeCoordinator
+from .params_catalog import SWITCH_DESCRIPTIONS
 
 
 @dataclass(frozen=True, kw_only=True)
-class EwpeSwitchDescription:
-    """Maps a switch entity to a Gree protocol parameter."""
+class ResolvedSwitchDescription:
+    """A switch group resolved to the wire param present on this device."""
 
     param: str
     unique_id_suffix: str
     translation_key: str
 
 
-SWITCH_DESCRIPTIONS: tuple[EwpeSwitchDescription, ...] = (
-    EwpeSwitchDescription(
-        param=PARAM_SLEEP, unique_id_suffix="sleep", translation_key="sleep"
-    ),
-    EwpeSwitchDescription(
-        param=PARAM_BLO, unique_id_suffix="xfan", translation_key="xfan"
-    ),
-    EwpeSwitchDescription(
-        param=PARAM_HEALTH, unique_id_suffix="health", translation_key="health"
-    ),
-    EwpeSwitchDescription(
-        param=PARAM_LIG,
-        unique_id_suffix="display_light",
-        translation_key="display_light",
-    ),
-    EwpeSwitchDescription(
-        param=PARAM_SVST,
-        unique_id_suffix="energy_save",
-        translation_key="energy_save",
-    ),
-    EwpeSwitchDescription(
-        param=PARAM_AIR, unique_id_suffix="fresh_air", translation_key="fresh_air"
-    ),
-    EwpeSwitchDescription(
-        param=PARAM_SLEEP_MODE,
-        unique_id_suffix="sleep_mode",
-        translation_key="sleep_mode",
-    ),
-    EwpeSwitchDescription(
-        param=PARAM_ANTI_DIRECT_BLOW,
-        unique_id_suffix="anti_direct_blow",
-        translation_key="anti_direct_blow",
-    ),
-    EwpeSwitchDescription(
-        param=PARAM_SENSOR_LIGHT,
-        unique_id_suffix="sensor_light",
-        translation_key="sensor_light",
-    ),
-    EwpeSwitchDescription(
-        param=PARAM_SMART_HEAT_8C,
-        unique_id_suffix="smart_heat_8c",
-        translation_key="smart_heat_8c",
-    ),
-    EwpeSwitchDescription(
-        param=PARAM_BEEPER,
-        unique_id_suffix="beeper",
-        translation_key="beeper",
-    ),
-)
-
-
 def supported_switch_descriptions(
     data: Mapping[str, int],
-) -> tuple[EwpeSwitchDescription, ...]:
-    """Return switch descriptions whose param appeared in a status reply."""
-    return tuple(desc for desc in SWITCH_DESCRIPTIONS if desc.param in data)
+) -> tuple[ResolvedSwitchDescription, ...]:
+    """Return one switch per wire key present in a status reply."""
+    return tuple(
+        ResolvedSwitchDescription(
+            param=description.param,
+            unique_id_suffix=description.unique_id_suffix,
+            translation_key=description.translation_key,
+        )
+        for description in SWITCH_DESCRIPTIONS
+        if description.param in data
+    )
 
 
 async def async_setup_entry(
@@ -123,7 +65,7 @@ class EwpeSwitchEntity(CoordinatorEntity[EwpeCoordinator], SwitchEntity):
         self,
         coordinator: EwpeCoordinator,
         entry: ConfigEntry,
-        description: EwpeSwitchDescription,
+        description: ResolvedSwitchDescription,
     ) -> None:
         super().__init__(coordinator)
         self._description = description

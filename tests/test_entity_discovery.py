@@ -15,8 +15,10 @@ from custom_components.ewpe_smart.const import (
     PARAM_SMART_HEAT_8C,
     PARAM_SWING_HORIZONTAL,
     PARAM_SWING_VERTICAL,
+    PARAM_SVST,
     PARAM_TUR,
 )
+from custom_components.ewpe_smart.params_catalog import diagnostic_params
 from custom_components.ewpe_smart.select import (
     supported_select_descriptions,
     supported_wind_speed_options,
@@ -50,6 +52,8 @@ UNIT_STATUS = {
     "FaultDisplay": 0,
     "StHt": 0,
     "Buzzer_ON_OFF": 1,
+    "TemRec": 0,
+    "HeatCoolType": 0,
 }
 
 
@@ -76,8 +80,19 @@ def test_unit_snapshot_entity_surface() -> None:
     assert sensors == {PARAM_OUTDOOR_TEMP, PARAM_HUMIDITY, PARAM_FAULT}
     assert {
         PARAM_SLEEP_MODE,
+        "SwhSlp",
         PARAM_ANTI_DIRECT_BLOW,
         PARAM_SENSOR_LIGHT,
         PARAM_SMART_HEAT_8C,
         PARAM_BEEPER,
+        PARAM_SVST,
     }.issubset(switches)
+
+
+def test_internal_params_use_explicit_sensors_not_fallback() -> None:
+    data = {**UNIT_STATUS, "NewTimer": 1}
+    raw = diagnostic_params(data)
+    assert "NewTimer" not in raw
+    assert "TemRec" not in raw
+    assert "Pow" not in raw
+    assert "SwhSlp" not in raw

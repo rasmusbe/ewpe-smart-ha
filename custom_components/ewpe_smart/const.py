@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from homeassistant.const import Platform
 
+from .params_catalog import (
+    ALL_KNOWN_PARAMS,
+    SWITCH_PARAM_NAMES,
+)
+
 DOMAIN = "ewpe_smart"
 MANUFACTURER = "Gree (EWPE Smart)"
 
@@ -12,6 +17,8 @@ PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.SELECT,
     Platform.SWITCH,
+    Platform.NUMBER,
+    Platform.BINARY_SENSOR,
 ]
 
 # Network
@@ -52,7 +59,7 @@ CONF_UPDATE_INTERVAL = "update_interval"
 CONF_BROADCAST = "broadcast"
 CONF_VERSION = "protocol_version"
 
-# ── Device parameter keys ──────────────────────────────────────────────────
+# ── Device parameter keys (climate + shared references) ───────────────────
 PARAM_POWER = "Pow"
 PARAM_MODE = "Mod"
 PARAM_SET_TEMP = "SetTem"
@@ -79,27 +86,12 @@ PARAM_HUMIDITY = "DwatSen"
 PARAM_FAULT = "FaultDisplay"
 PARAM_SMART_HEAT_8C = "StHt"
 PARAM_BEEPER = "Buzzer_ON_OFF"
-
-# Probe discovery only — no entities
-PARAM_TEMP_REC = "TemRec"
 PARAM_BEEPER_NEW = "BuzzerCtrl"
-PARAM_HEAT_COOL_TYPE = "HeatCoolType"
 
-SWITCH_PARAMS: list[str] = [
-    PARAM_SLEEP,
-    PARAM_TUR,
-    PARAM_QUIET,
-    PARAM_BLO,
-    PARAM_HEALTH,
-    PARAM_LIG,
-    PARAM_SVST,
-    PARAM_AIR,
-    PARAM_SLEEP_MODE,
-    PARAM_ANTI_DIRECT_BLOW,
-    PARAM_SENSOR_LIGHT,
-    PARAM_SMART_HEAT_8C,
-    PARAM_BEEPER,
-]
+# Legacy aliases — prefer ALL_KNOWN_PARAMS / params_catalog for new work.
+STATUS_PARAMS: list[str] = list(ALL_KNOWN_PARAMS)
+DISCOVERY_PARAMS: list[str] = list(ALL_KNOWN_PARAMS)
+SWITCH_PARAMS: list[str] = sorted(SWITCH_PARAM_NAMES)
 
 SELECT_PARAMS: list[str] = [
     PARAM_SWING_HORIZONTAL,
@@ -111,26 +103,6 @@ SENSOR_PARAMS: list[str] = [
     PARAM_HUMIDITY,
     PARAM_FAULT,
 ]
-
-STATUS_PARAMS: list[str] = [
-    PARAM_POWER,
-    PARAM_MODE,
-    PARAM_SET_TEMP,
-    PARAM_TEMP_UNIT,
-    PARAM_FAN_SPEED,
-    PARAM_TEMP_SENSOR,
-    *SWITCH_PARAMS,
-    *SELECT_PARAMS,
-    *SENSOR_PARAMS,
-]
-
-DISCOVERY_ONLY_PARAMS: list[str] = [
-    PARAM_TEMP_REC,
-    PARAM_BEEPER_NEW,
-    PARAM_HEAT_COOL_TYPE,
-]
-
-DISCOVERY_PARAMS: list[str] = [*STATUS_PARAMS, *DISCOVERY_ONLY_PARAMS]
 
 # ── Value mappings ─────────────────────────────────────────────────────────
 POWER_OFF = 0

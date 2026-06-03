@@ -6,7 +6,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from custom_components.ewpe_smart.const import PARAM_LIG, PARAM_QUIET
+from custom_components.ewpe_smart.const import (
+    PARAM_BEEPER,
+    PARAM_BEEPER_NEW,
+    PARAM_LIG,
+    PARAM_QUIET,
+)
 from custom_components.ewpe_smart.switch import (
     EwpeSwitchEntity,
     supported_switch_descriptions,
@@ -45,6 +50,34 @@ def test_supported_switch_descriptions_filters_by_status_keys() -> None:
     descriptions = supported_switch_descriptions(data)
     params = {d.param for d in descriptions}
     assert params == {PARAM_LIG}
+
+
+def test_sleep_exposes_all_wire_keys_when_present() -> None:
+    data = {"SmartSlpMod": 1, "SlpMod": 0, "SwhSlp": 1}
+    descriptions = supported_switch_descriptions(data)
+    params = {d.param for d in descriptions}
+    assert params == {"SmartSlpMod", "SlpMod", "SwhSlp"}
+
+
+def test_buzzer_exposes_both_wire_keys_when_present() -> None:
+    data = {"BuzzerCtrl": 0, "Buzzer_ON_OFF": 1}
+    descriptions = supported_switch_descriptions(data)
+    params = {d.param for d in descriptions}
+    assert params == {PARAM_BEEPER_NEW, PARAM_BEEPER}
+
+
+def test_buzzer_ctrl_switch_when_alone() -> None:
+    data = {"Pow": 1, "BuzzerCtrl": 0}
+    descriptions = supported_switch_descriptions(data)
+    params = {d.param for d in descriptions}
+    assert params == {PARAM_BEEPER_NEW}
+
+
+def test_buzzer_on_off_when_ctrl_absent() -> None:
+    data = {"Pow": 1, "Buzzer_ON_OFF": 1}
+    descriptions = supported_switch_descriptions(data)
+    params = {d.param for d in descriptions}
+    assert params == {PARAM_BEEPER}
 
 
 def test_quiet_is_not_exposed_as_switch() -> None:

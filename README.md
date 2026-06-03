@@ -172,7 +172,10 @@ implemented as an MQTT bridge by
 
 This integration is a clean-room Python port of the protocol layer, structured
 for testability: the `protocol.py` and `device.py` modules have **no Home
-Assistant imports** and can be exercised by a plain pytest run.
+Assistant imports** and can be exercised by a plain pytest run. The wire-key
+catalog lives in
+[`custom_components/ewpe_smart/data/wire_params.json`](custom_components/ewpe_smart/data/wire_params.json)
+and is loaded by `params_catalog.py`.
 
 ## Running the test suite
 

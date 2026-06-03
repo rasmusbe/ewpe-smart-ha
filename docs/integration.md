@@ -160,9 +160,23 @@ speed — that moved to `select.wind_speed`.
 
 ### Switch (`switch.py`)
 
-Binary 0/1 flags. Each appears only if its param is in status `cols`.
+Binary 0/1 flags with **canonical alias deduplication** (one entity per
+feature). Each appears only if its param is in status `cols`.
 
-See [parameters.md](parameters.md) for the full switch list.
+### Number (`number.py`)
+
+Timers, sleep-curve steps, and other numeric setpoints. Hide-when-missing.
+
+### Binary sensor (`binary_sensor.py`)
+
+Maintenance alerts and status flags (`ReplaceHEPA`, `HasTmr`, …).
+
+### Diagnostic fallback (`sensor.py`)
+
+Any supported wire key without an explicit mapping becomes a read-only
+diagnostic sensor showing the raw integer.
+
+See [parameters.md](parameters.md) for the full entity list.
 
 ## Testing
 

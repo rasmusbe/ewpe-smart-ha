@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -16,7 +17,7 @@ from .device import EwpeAuthError, EwpeDevice, EwpeError
 _LOGGER = logging.getLogger(__name__)
 
 
-class EwpeCoordinator(DataUpdateCoordinator[dict[str, int]]):
+class EwpeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Polls a single EwpeDevice and surfaces failures to HA."""
 
     def __init__(
@@ -51,7 +52,7 @@ class EwpeCoordinator(DataUpdateCoordinator[dict[str, int]]):
             self.device.host,
         )
 
-    async def _async_update_data(self) -> dict[str, int]:
+    async def _async_update_data(self) -> dict[str, Any]:
         try:
             return await self.device.get_status()
         except EwpeAuthError as err:

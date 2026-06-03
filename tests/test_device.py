@@ -101,6 +101,32 @@ async def test_get_status_falls_back_to_alternate_protocol_version() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_status_discovers_supported_params() -> None:
+    """First poll requests the full catalog; supported cols are cached."""
+    mock, port = await start_mock_device(
+        status={
+            "Pow": 1,
+            "Mod": 1,
+            "SetTem": 22,
+            "TemUn": 0,
+            "WdSpd": 0,
+            "TemSen": 65,
+            "ChildLock": 0,
+        }
+    )
+    device = EwpeDevice(host="127.0.0.1", port=port, timeout=2.0)
+    await device.bind()
+
+    status = await device.get_status()
+
+    assert sorted(device.supported_params) == sorted(
+        ["Pow", "Mod", "SetTem", "TemUn", "WdSpd", "TemSen", "ChildLock"]
+    )
+    assert status["ChildLock"] == 0
+    assert mock.mac == device.mac
+
+
+@pytest.mark.asyncio
 async def test_get_status_omits_unsupported_switch_params_from_mock() -> None:
     """Mock devices only echo params they know about (hide-when-missing semantics)."""
     mock, port = await start_mock_device(

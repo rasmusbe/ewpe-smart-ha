@@ -113,8 +113,29 @@
       }
     },
     "switch": {
-      "sleep": {
-        "name": "Spánek"
+      "smart_slp_mod": {
+        "name": "Chytrý spánek (SmartSlpMod)"
+      },
+      "slp_mod": {
+        "name": "Spánek (SlpMod)"
+      },
+      "swh_slp": {
+        "name": "Spánek legacy (SwhSlp)"
+      },
+      "emod": {
+        "name": "Ekonomický režim (Emod)"
+      },
+      "svst": {
+        "name": "Úspora energie (SvSt)"
+      },
+      "nobody_save": {
+        "name": "Úspora při neobsazení (NobodySave)"
+      },
+      "buzzer_ctrl": {
+        "name": "Pípání (BuzzerCtrl)"
+      },
+      "buzzer_on_off": {
+        "name": "Pípání (Buzzer_ON_OFF)"
       },
       "xfan": {
         "name": "X-Fan"
@@ -125,14 +146,8 @@
       "display_light": {
         "name": "Displej"
       },
-      "energy_save": {
-        "name": "Úspora energie"
-      },
       "fresh_air": {
         "name": "Přívod čerstvého vzduchu"
-      },
-      "sleep_mode": {
-        "name": "Režim spánku"
       },
       "anti_direct_blow": {
         "name": "Bez přímého foukání"
@@ -142,9 +157,6 @@
       },
       "smart_heat_8c": {
         "name": "Topení 8 °C"
-      },
-      "beeper": {
-        "name": "Pípání"
       }
     }
   }
