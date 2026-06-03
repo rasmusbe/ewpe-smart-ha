@@ -31,7 +31,8 @@ talks to the unit over UDP/7000 directly — no MQTT broker, no extra processes.
   display, timers, child lock, auto clean, UV-C, and more (**one switch per wire
   key** the device returns, so overlapping names like `BuzzerCtrl` and
   `Buzzer_ON_OFF` stay separate)
-- 📊 **Sensors** — indoor/outdoor temperature, humidity, PM2.5, fault codes,
+- 📊 **Sensors** — indoor/outdoor temperature, humidity (`Wet`), drain water
+  (`DwatSen`), PM2.5, fault codes,
   compressor diagnostics, filter status, and metadata fields when echoed
 - 🔢 **Number entities** — timer countdowns, unoccupied-off delay, sleep-curve
   temperature steps
@@ -136,7 +137,7 @@ status reply get entities. The exact set varies by model and firmware.
 | `climate` | Power, HVAC mode, target/current temperature |
 | `select` | Wind speed, horizontal/vertical swing |
 | `switch` | Sleep (`SmartSlpMod`, `SlpMod`, `SwhSlp`), beeper (`BuzzerCtrl`, `Buzzer_ON_OFF`), energy save, child lock, auto clean, … |
-| `sensor` | Indoor/outdoor temp, humidity, PM2.5, faults, firmware/host/MAC when returned |
+| `sensor` | Indoor/outdoor temp, humidity (`Wet`), drain water (`DwatSen`), PM2.5, faults, metadata when returned |
 | `number` | Timer minutes left, sleep-curve steps, unoccupied-off time |
 | `binary_sensor` | Replace HEPA, motion, drain pump, has timer |
 

@@ -5,9 +5,10 @@ from __future__ import annotations
 from custom_components.ewpe_smart.const import (
     PARAM_ANTI_DIRECT_BLOW,
     PARAM_BEEPER,
+    PARAM_DRAIN_WATER_SENSOR,
     PARAM_FAN_SPEED,
     PARAM_FAULT,
-    PARAM_HUMIDITY,
+    PARAM_HEAT_COOL_TYPE,
     PARAM_OUTDOOR_TEMP,
     PARAM_QUIET,
     PARAM_SENSOR_LIGHT,
@@ -16,6 +17,7 @@ from custom_components.ewpe_smart.const import (
     PARAM_SWING_HORIZONTAL,
     PARAM_SWING_VERTICAL,
     PARAM_SVST,
+    PARAM_TEM_REC,
     PARAM_TUR,
 )
 from custom_components.ewpe_smart.params_catalog import diagnostic_params
@@ -77,7 +79,12 @@ def test_unit_snapshot_entity_surface() -> None:
     assert PARAM_QUIET in UNIT_STATUS
     assert PARAM_TUR in UNIT_STATUS
     assert selects == {PARAM_SWING_HORIZONTAL, PARAM_SWING_VERTICAL}
-    assert sensors == {PARAM_OUTDOOR_TEMP, PARAM_HUMIDITY, PARAM_FAULT}
+    assert sensors == {
+        PARAM_OUTDOOR_TEMP,
+        PARAM_DRAIN_WATER_SENSOR,
+        PARAM_FAULT,
+        PARAM_HEAT_COOL_TYPE,
+    }
     assert {
         PARAM_SLEEP_MODE,
         "SwhSlp",
@@ -89,10 +96,10 @@ def test_unit_snapshot_entity_surface() -> None:
     }.issubset(switches)
 
 
-def test_internal_params_use_explicit_sensors_not_fallback() -> None:
+def test_internal_params_use_explicit_entities_not_fallback() -> None:
     data = {**UNIT_STATUS, "NewTimer": 1}
     raw = diagnostic_params(data)
     assert "NewTimer" not in raw
-    assert "TemRec" not in raw
+    assert PARAM_TEM_REC not in raw
     assert "Pow" not in raw
     assert "SwhSlp" not in raw

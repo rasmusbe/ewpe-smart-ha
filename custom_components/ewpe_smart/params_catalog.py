@@ -65,7 +65,7 @@ TEMP_OFFSET_PARAMS: frozenset[str] = frozenset(
 
 # Owned by the climate entity — never generic diagnostic.
 CLIMATE_PARAMS: frozenset[str] = frozenset(
-    {"Pow", "Mod", "SetTem", "TemUn", "TemRec", "HeatCoolType", "TemSen"}
+    {"Pow", "Mod", "SetTem", "TemUn", "TemSen"}
 )
 
 # Owned by the wind speed select — never generic diagnostic.
@@ -111,7 +111,19 @@ SWITCH_DESCRIPTIONS: tuple[SwitchDescriptionRef, ...] = (
     _switch("SlpMod", translation_key="slp_mod", unique_id_suffix="slp_mod"),
     _switch("SwhSlp", translation_key="swh_slp", unique_id_suffix="swh_slp"),
     _switch("Emod"),
-    _switch("SvSt"),
+    _switch("SvSt", translation_key="power_saving", unique_id_suffix="power_saving"),
+    _switch(
+        "Dazzling",
+        translation_key="anti_dazzle",
+        unique_id_suffix="anti_dazzle",
+    ),
+    _switch("LedLight", translation_key="led_light", unique_id_suffix="led_light"),
+    _switch("LedLig", translation_key="led_light_zone", unique_id_suffix="led_light_zone"),
+    _switch(
+        "DsplySt",
+        translation_key="display_state_switch",
+        unique_id_suffix="display_state_switch",
+    ),
     _switch(
         "NobodySave",
         translation_key="nobody_save",
@@ -136,7 +148,11 @@ SWITCH_DESCRIPTIONS: tuple[SwitchDescriptionRef, ...] = (
         translation_key="anti_direct_blow",
         unique_id_suffix="anti_direct_blow",
     ),
-    _switch("LigSen", translation_key="sensor_light", unique_id_suffix="sensor_light"),
+    _switch(
+        "LigSen",
+        translation_key="light_sensor",
+        unique_id_suffix="light_sensor",
+    ),
     _switch("StHt", translation_key="smart_heat_8c", unique_id_suffix="smart_heat_8c"),
     _switch("ChildLock", translation_key="child_lock", unique_id_suffix="child_lock"),
     _switch("AutoClean", translation_key="auto_clean", unique_id_suffix="auto_clean"),
@@ -153,8 +169,8 @@ SWITCH_DESCRIPTIONS: tuple[SwitchDescriptionRef, ...] = (
         translation_key="unoccupied_shutdown",
         unique_id_suffix="unoccupied_shutdown",
     ),
-    _switch("TmrOn", translation_key="timer_on", unique_id_suffix="timer_on"),
-    _switch("TmrOff", translation_key="timer_off", unique_id_suffix="timer_off"),
+    _switch("TmrOn", translation_key="timer_start", unique_id_suffix="timer_start"),
+    _switch("TmrOff", translation_key="timer_stop", unique_id_suffix="timer_stop"),
 )
 
 SWITCH_PARAM_NAMES: frozenset[str] = frozenset(
@@ -208,6 +224,12 @@ EXTRA_SENSOR_DESCRIPTIONS: tuple[SensorDescriptionRef, ...] = (
     ),
     SensorDescriptionRef(
         param="DwatSen",
+        unique_id_suffix="drain_water_sensor",
+        translation_key="drain_water_sensor",
+        entity_category="diagnostic",
+    ),
+    SensorDescriptionRef(
+        param="Wet",
         unique_id_suffix="humidity",
         translation_key="humidity",
         device_class="humidity",
@@ -261,8 +283,8 @@ EXTRA_SENSOR_DESCRIPTIONS: tuple[SensorDescriptionRef, ...] = (
     ),
     SensorDescriptionRef(
         param="FbidBloPer",
-        unique_id_suffix="filter_block_percent",
-        translation_key="filter_block_percent",
+        unique_id_suffix="forbidden_blow_period",
+        translation_key="forbidden_blow_period",
         entity_category="diagnostic",
         native_unit_of_measurement="%",
         percent_range=True,
@@ -332,9 +354,9 @@ EXTRA_SENSOR_DESCRIPTIONS: tuple[SensorDescriptionRef, ...] = (
         entity_category="diagnostic",
     ),
     SensorDescriptionRef(
-        param="DsplySt",
-        unique_id_suffix="display_state",
-        translation_key="display_state",
+        param="HeatCoolType",
+        unique_id_suffix="heat_cool_type",
+        translation_key="heat_cool_type",
         entity_category="diagnostic",
     ),
     SensorDescriptionRef(
@@ -360,7 +382,6 @@ _REMAINING_SENSOR_PARAMS: tuple[tuple[str, Literal["int", "text"]], ...] = (
     ("BlkTemCom", "int"),
     ("Coolmod", "int"),
     ("DFPoint", "int"),
-    ("Dazzling", "int"),
     ("Dmod", "int"),
     ("DwatFul", "int"),
     ("Dwet", "int"),
@@ -370,8 +391,6 @@ _REMAINING_SENSOR_PARAMS: tuple[tuple[str, Literal["int", "text"]], ...] = (
     ("HeatCool", "int"),
     ("ImgUpdateCol", "text"),
     ("ImgVerSta", "int"),
-    ("LedLig", "int"),
-    ("LedLight", "int"),
     ("ModelNew", "int"),
     ("ModelType", "text"),
     ("NewTimer", "int"),
@@ -381,7 +400,6 @@ _REMAINING_SENSOR_PARAMS: tuple[tuple[str, Literal["int", "text"]], ...] = (
     ("VocRole", "int"),
     ("VocUpdateCol", "text"),
     ("VocVerSta", "int"),
-    ("Wet", "int"),
     ("Wind", "int"),
     ("bc", "text"),
     ("busVol", "int"),
@@ -496,6 +514,22 @@ NUMBER_DESCRIPTIONS: tuple[NumberDescriptionRef, ...] = (
         native_max_value=1440,
         native_unit_of_measurement="min",
     ),
+    NumberDescriptionRef(
+        param="TemRec",
+        unique_id_suffix="temperature_display_offset",
+        translation_key="temperature_display_offset",
+        native_min_value=0,
+        native_max_value=10,
+        native_step=0.5,
+        native_unit_of_measurement="°C",
+    ),
+    NumberDescriptionRef(
+        param="UDFanPort",
+        unique_id_suffix="up_down_fan_port",
+        translation_key="up_down_fan_port",
+        native_min_value=0,
+        native_max_value=11,
+    ),
     *(
         NumberDescriptionRef(
             param=f"Slp1L{i}",
@@ -525,7 +559,13 @@ EXPLICIT_NUMBER_PARAMS: frozenset[str] = frozenset(
 )
 
 SELECT_PARAM_NAMES: frozenset[str] = frozenset(
-    {"SwingLfRig", "SwUpDn", "DnPUDSwing", "DnPRLRSwing", "DnPLLRSwing", "UDFanPort"}
+    {
+        "SwingLfRig",
+        "SwUpDn",
+        "DnPUDSwing",
+        "DnPRLRSwing",
+        "DnPLLRSwing",
+    }
 )
 
 

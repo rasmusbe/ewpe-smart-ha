@@ -23,6 +23,9 @@ from .const import (
     MANUFACTURER,
     PARAM_FAN_SPEED,
     PARAM_QUIET,
+    PARAM_SUB_ZONE_SWING_LEFT,
+    PARAM_SUB_ZONE_SWING_RIGHT,
+    PARAM_SUB_ZONE_SWING_UD,
     PARAM_SWING_HORIZONTAL,
     PARAM_SWING_VERTICAL,
     PARAM_TUR,
@@ -115,6 +118,24 @@ SELECT_DESCRIPTIONS: tuple[EwpeSelectDescription, ...] = (
         unique_id_suffix="swing_vertical",
         translation_key="swing_vertical",
         device_to_option=SWING_VERTICAL_DEVICE_TO_OPTION,
+    ),
+    EwpeSelectDescription(
+        param=PARAM_SUB_ZONE_SWING_UD,
+        unique_id_suffix="sub_zone_swing_ud",
+        translation_key="sub_zone_swing_ud",
+        device_to_option=SWING_VERTICAL_DEVICE_TO_OPTION,
+    ),
+    EwpeSelectDescription(
+        param=PARAM_SUB_ZONE_SWING_RIGHT,
+        unique_id_suffix="sub_zone_swing_right_lr",
+        translation_key="sub_zone_swing_right_lr",
+        device_to_option=SWING_HORIZONTAL_DEVICE_TO_OPTION,
+    ),
+    EwpeSelectDescription(
+        param=PARAM_SUB_ZONE_SWING_LEFT,
+        unique_id_suffix="sub_zone_swing_left_lr",
+        translation_key="sub_zone_swing_left_lr",
+        device_to_option=SWING_HORIZONTAL_DEVICE_TO_OPTION,
     ),
 )
 

@@ -105,8 +105,11 @@
       "outdoor_temperature": {
         "name": "Venkovní teplota"
       },
+      "drain_water_sensor": {
+        "name": "Senzor odvodnění"
+      },
       "humidity": {
-        "name": "Vlhkost"
+        "name": "Vlhkost / mokrý režim"
       },
       "fault": {
         "name": "Kód poruchy"
@@ -117,19 +120,22 @@
         "name": "Chytrý spánek (SmartSlpMod)"
       },
       "slp_mod": {
-        "name": "Spánek (SlpMod)"
+        "name": "Typ spánku"
       },
       "swh_slp": {
-        "name": "Spánek legacy (SwhSlp)"
+        "name": "Spínač spánku"
       },
       "emod": {
         "name": "Ekonomický režim (Emod)"
       },
-      "svst": {
-        "name": "Úspora energie (SvSt)"
+      "power_saving": {
+        "name": "Úspora energie"
       },
       "nobody_save": {
-        "name": "Úspora při neobsazení (NobodySave)"
+        "name": "Úspora při neobsazení"
+      },
+      "light_sensor": {
+        "name": "Senzor osvětlení"
       },
       "buzzer_ctrl": {
         "name": "Pípání (BuzzerCtrl)"
@@ -151,9 +157,6 @@
       },
       "anti_direct_blow": {
         "name": "Bez přímého foukání"
-      },
-      "sensor_light": {
-        "name": "Automatický displej"
       },
       "smart_heat_8c": {
         "name": "Topení 8 °C"

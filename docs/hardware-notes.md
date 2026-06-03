@@ -20,7 +20,8 @@ A tested unit returned 26 of 27 requested discovery columns. Decoded highlights:
 | `SwingLfRig` | 1 | Full swing |
 | `SwUpDn` | 6 | Fixed lower |
 | `WdSpd` | 0 | Auto |
-| `DwatSen` | 0 | Humidity — always 0 |
+| `DwatSen` | 0 | Drain water sensor — always 0 on tested unit |
+| `Wet` | — | Humidity key — not echoed on tested unit |
 | `StHt` | 0 | 8 °C heat — present but ineffective |
 | `Buzzer_ON_OFF` | 1 | Beeper on — switch entity did not change behaviour |
 
@@ -46,11 +47,15 @@ Parameter appears in status and the switch reflects the wire value, but toggling
 had **no visible effect** in the native app or HA on tested hardware. The entity
 is still useful for monitoring and for units where the feature works.
 
-### Humidity (`DwatSen`) — `sensor.humidity`
+### Drain water (`DwatSen`) — `sensor.drain_water_sensor`
 
-Parameter appears in status but value stayed **0** on tested hardware — likely
-no physical sensor despite the key being present. The entity reports the wire
-value literally (including `0 %`).
+Parameter appears in status but value stayed **0** on tested hardware. Mapped as
+a drain-water diagnostic per Gree parameter reference (not humidity).
+
+### Humidity (`Wet`) — `sensor.humidity`
+
+Use `Wet` for relative humidity when the device echoes it. The reference unit did
+not return `Wet` in `cols`; do not use `DwatSen` for humidity.
 
 ### Beeper switch (`Buzzer_ON_OFF`)
 

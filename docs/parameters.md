@@ -117,7 +117,16 @@ Fixed positions match the native app. Wire value **1 = full swing** for both axe
 | 5 | Right center |
 | 6 | Right |
 
+| Key | Entity | Translation key |
+|-----|--------|-----------------|
+| `DnPUDSwing` | Sub-zone up/down swing | `sub_zone_swing_ud` |
+| `DnPRLRSwing` | Sub-zone right L/R swing | `sub_zone_swing_right_lr` |
+| `DnPLLRSwing` | Sub-zone left L/R swing | `sub_zone_swing_left_lr` |
+
 ### Vertical (`SwUpDn`)
+
+Sub-zone swing params (`DnPUDSwing`, `DnPRLRSwing`, `DnPLLRSwing`) use the same
+wire value tables when the device echoes them.
 
 | Wire value | Select option |
 |------------|---------------|
@@ -152,11 +161,14 @@ own switch so you can see which one actually works on your firmware.
 | Key(s) | Entity name | Translation key | Notes |
 |--------|-------------|-----------------|-------|
 | `SmartSlpMod` | Smart sleep mode | `smart_slp_mod` | |
-| `SlpMod` | Sleep mode | `slp_mod` | |
-| `SwhSlp` | Sleep mode (legacy) | `swh_slp` | |
+| `SlpMod` | Sleep mode type | `slp_mod` | |
+| `SwhSlp` | Sleep mode switch | `swh_slp` | |
 | `Emod` | Economy mode | `emod` | |
-| `SvSt` | Energy save | `svst` | |
-| `NobodySave` | Nobody save | `nobody_save` | |
+| `SvSt` | Power saving | `power_saving` | X-Fan internal flag on some firmware |
+| `NobodySave` | Nobody-home saving | `nobody_save` | |
+| `Dazzling` | Anti-dazzle | `anti_dazzle` | Display brightness |
+| `LedLight` / `LedLig` | LED light / zone | `led_light` / `led_light_zone` | |
+| `DsplySt` | Display state | `display_state_switch` | |
 | `BuzzerCtrl` | Beeper (BuzzerCtrl) | `buzzer_ctrl` | |
 | `Buzzer_ON_OFF` | Beeper (Buzzer_ON_OFF) | `buzzer_on_off` | |
 | `Blo` | X-Fan | `xfan` | Post-run fan dry |
@@ -164,7 +176,7 @@ own switch so you can see which one actually works on your firmware.
 | `Lig` | Display light | `display_light` | Panel LED |
 | `Air` | Fresh air | `fresh_air` | Fresh-air valve |
 | `AntiDirectBlow` | Anti direct blow | `anti_direct_blow` | No direct airflow |
-| `LigSen` | Auto display | `sensor_light` | Ambient-light-driven display |
+| `LigSen` | Light sensor | `light_sensor` | Light sensor enable |
 | `StHt` | 8 °C heat | `smart_heat_8c` | Smart heat / anti-freeze |
 | `ChildLock` | Child lock | `child_lock` | Panel lock |
 | `AutoClean` | Auto clean | `auto_clean` | Self-clean cycle |
@@ -173,7 +185,7 @@ own switch so you can see which one actually works on your firmware.
 | `SmartWind` | Smart wind | `smart_wind` | Smart airflow |
 | `AutoPowReduce` | Auto power reduce | `auto_pow_reduce` | Automatic power limiting |
 | `UnmanedShutDown` | Unoccupied shutdown | `unoccupied_shutdown` | Auto-off when empty |
-| `TmrOn` / `TmrOff` | Timer on / off | `timer_on` / `timer_off` | Built-in timer flags |
+| `TmrOn` / `TmrOff` | Timer start / stop | `timer_start` / `timer_stop` | Built-in timer flags |
 
 All switches use **hide-when-missing**: the entity exists only if the device
 returns the key in status `cols`.
@@ -186,11 +198,16 @@ returns the key in status `cols`.
 |-----|--------|-----------|----------|
 | `TemSen` | Indoor temperature | −40 → °C | Measurement |
 | `OutEnvTem` | Outdoor temperature | −40 → °C | Measurement |
-| `DwatSen` | Humidity | Raw 0–100 → % | Measurement |
+| `DwatSen` | Drain water sensor | Raw integer | Diagnostic |
+| `Wet` | Humidity / wet mode | Raw 0–100 → % | Measurement |
+| `TemRec` | Temperature display offset | 0–10 (0.5° steps) | Number |
+| `HeatCoolType` | Heat/cool type | Raw integer | Diagnostic |
+| `UDFanPort` | Up/down fan port | 0–11 | Number |
 | `PM2P5` | PM2.5 | Raw integer | Measurement |
 | `FaultDisplay` | Fault code | Raw integer | Diagnostic |
 | `Dfltr` | Filter status | Raw integer | Diagnostic |
 | `AllErr`, `JFErrorCode`, … | Fault aggregates | Raw integer | Diagnostic |
+| `FbidBloPer` | Forbidden blow period | Raw 0–100 → % | Diagnostic |
 | *(unmapped)* | Raw wire key | Raw integer | Diagnostic fallback |
 
 Unmapped parameters in `supported_params` appear as diagnostic sensors named

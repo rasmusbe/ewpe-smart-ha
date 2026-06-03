@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from custom_components.ewpe_smart.const import PARAM_FAULT, PARAM_HUMIDITY, PARAM_OUTDOOR_TEMP
+from custom_components.ewpe_smart.const import (
+    PARAM_DRAIN_WATER_SENSOR,
+    PARAM_FAULT,
+    PARAM_HUMIDITY,
+    PARAM_OUTDOOR_TEMP,
+)
 from custom_components.ewpe_smart.sensor import (
     EwpeExtraSensor,
     supported_extra_sensor_descriptions,
@@ -35,10 +40,21 @@ def _make_sensor(param: str, value: int) -> EwpeExtraSensor:
 
 
 def test_supported_extra_sensor_descriptions_filters_by_status_keys() -> None:
-    data = {"Pow": 1, PARAM_OUTDOOR_TEMP: 22, PARAM_HUMIDITY: 45, PARAM_FAULT: 0}
+    data = {
+        "Pow": 1,
+        PARAM_OUTDOOR_TEMP: 22,
+        PARAM_DRAIN_WATER_SENSOR: 1,
+        PARAM_HUMIDITY: 45,
+        PARAM_FAULT: 0,
+    }
     descriptions = supported_extra_sensor_descriptions(data)
     params = {d.param for d in descriptions}
-    assert params == {PARAM_OUTDOOR_TEMP, PARAM_HUMIDITY, PARAM_FAULT}
+    assert params == {
+        PARAM_OUTDOOR_TEMP,
+        PARAM_DRAIN_WATER_SENSOR,
+        PARAM_HUMIDITY,
+        PARAM_FAULT,
+    }
 
 
 def test_outdoor_temperature_reads_decoded_value() -> None:
@@ -49,6 +65,11 @@ def test_outdoor_temperature_reads_decoded_value() -> None:
 def test_fault_reads_numeric_code() -> None:
     entity = _make_sensor(PARAM_FAULT, 0)
     assert entity.native_value == 0
+
+
+def test_drain_water_sensor_reads_raw_value() -> None:
+    entity = _make_sensor(PARAM_DRAIN_WATER_SENSOR, 1)
+    assert entity.native_value == 1
 
 
 def test_humidity_reads_percent_value() -> None:
