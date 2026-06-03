@@ -103,14 +103,30 @@ def _switch(
 
 # One HA switch per wire key — no priority collapse when firmware echoes several.
 SWITCH_DESCRIPTIONS: tuple[SwitchDescriptionRef, ...] = (
-    _switch("SmartSlpMod"),
-    _switch("SlpMod"),
-    _switch("SwhSlp"),
+    _switch(
+        "SmartSlpMod",
+        translation_key="smart_slp_mod",
+        unique_id_suffix="smart_slp_mod",
+    ),
+    _switch("SlpMod", translation_key="slp_mod", unique_id_suffix="slp_mod"),
+    _switch("SwhSlp", translation_key="swh_slp", unique_id_suffix="swh_slp"),
     _switch("Emod"),
     _switch("SvSt"),
-    _switch("NobodySave"),
-    _switch("BuzzerCtrl"),
-    _switch("Buzzer_ON_OFF"),
+    _switch(
+        "NobodySave",
+        translation_key="nobody_save",
+        unique_id_suffix="nobody_save",
+    ),
+    _switch(
+        "BuzzerCtrl",
+        translation_key="buzzer_ctrl",
+        unique_id_suffix="buzzer_ctrl",
+    ),
+    _switch(
+        "Buzzer_ON_OFF",
+        translation_key="buzzer_on_off",
+        unique_id_suffix="buzzer_on_off",
+    ),
     _switch("Blo", translation_key="xfan", unique_id_suffix="xfan"),
     _switch("Health", translation_key="health", unique_id_suffix="health"),
     _switch("Lig", translation_key="display_light", unique_id_suffix="display_light"),

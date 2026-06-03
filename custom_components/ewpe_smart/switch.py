@@ -73,8 +73,6 @@ class EwpeSwitchEntity(CoordinatorEntity[EwpeCoordinator], SwitchEntity):
         device = coordinator.device
         device_mac = config_device_mac(entry, device)
         self._attr_translation_key = description.translation_key
-        # Fallback when translations are missing — avoids duplicate switch.ac_* ids.
-        self._attr_name = description.param
         self._attr_unique_id = f"{device_mac}_{description.unique_id_suffix}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, config_device_identifier(entry, device))},

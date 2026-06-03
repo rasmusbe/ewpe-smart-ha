@@ -94,9 +94,10 @@ def test_switch_unique_id_uses_config_mac() -> None:
     assert entity.unique_id == "580d0df2deaf_display_light"
 
 
-def test_switch_fallback_name_uses_wire_param() -> None:
+def test_switch_uses_translation_key_not_wire_param_name() -> None:
     entity, _ = _make_switch({"Lig": 1})
-    assert entity._attr_name == PARAM_LIG
+    assert entity._attr_translation_key == "display_light"
+    assert getattr(entity, "_attr_name", None) is None
 
 
 def test_is_on_reflects_param_value() -> None:
