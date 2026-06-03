@@ -20,7 +20,8 @@ live hardware — see [hardware-notes.md](hardware-notes.md) and [references.md]
   `sensor.<wire_key>` fallback is only used for cols returned by the device
   that are not listed in `wire_params.json` (under `custom_components/ewpe_smart/data/`).
 - Metadata / string cols (`mac`, `ver`, `host`, …) use **text sensors** when
-  the device echoes non-integer values.
+  the device echoes non-integer values. The `mac` sensor is omitted when the
+  status value is a placeholder (`0`, empty, or all zeros).
 
 **Transform rule:** temperature-like params listed in `TEMP_OFFSET_PARAMS` are
 decoded in `device.get_status()` by adding `TEMP_SENSOR_OFFSET` (−40). Entities
@@ -123,6 +124,10 @@ Fixed positions match the native app. Wire value **1 = full swing** for both axe
 | `DnPRLRSwing` | Sub-zone right L/R swing | `sub_zone_swing_right_lr` |
 | `DnPLLRSwing` | Sub-zone left L/R swing | `sub_zone_swing_left_lr` |
 
+Sub-zone swing selects use **hide-when-unmapped**: the entity is created only when
+the device reports a wire value that maps to a select option (placeholder `0` is
+treated as unsupported).
+
 ### Vertical (`SwUpDn`)
 
 Sub-zone swing params (`DnPUDSwing`, `DnPRLRSwing`, `DnPLLRSwing`) use the same
@@ -211,7 +216,8 @@ returns the key in status `cols`.
 | *(unmapped)* | Raw wire key | Raw integer | Diagnostic fallback |
 
 Unmapped parameters in `supported_params` appear as diagnostic sensors named
-after the wire key (for example `sensor.newtimer`).
+after the wire key (for example `sensor.newtimer`). These fallback sensors are
+**disabled by default**.
 
 ---
 
@@ -222,7 +228,34 @@ after the wire key (for example `sensor.newtimer`).
 | `TmrOnMinLf` / `TmrOffMinLf` | Timer minutes left | 0–1440 | On/off countdown |
 | `TmrLpTms` | Timer loop times | 0–255 | |
 | `UnmanedOffTime` | Unoccupied off time | 0–1440 min | |
-| `Slp1L1`–`Slp1L8`, `Slp1H1`–`Slp1H8` | Sleep curve steps | 16–30 °C | Night temperature profile |
+| `Slp1L1`–`Slp1L8`, `Slp1H1`–`Slp1H8` | Sleep curve steps | 16–30 °C | Night temperature profile; disabled by default in HA |
+
+---
+
+## Disabled by default in Home Assistant
+
+Many entities register **disabled** until you enable them under **Settings →
+Devices & services → Entities**. This applies to **new** entity registrations
+only; entities you already enabled stay enabled after an integration upgrade.
+
+Climate core (`Pow`, `Mod`, `SetTem`, `TemUn`) and the indoor temperature
+sensor always stay available. Unmapped wire keys always appear as disabled
+diagnostic sensors.
+
+Canonical wire keys live in `params_catalog.py` as named subsets merged into
+`DISABLED_BY_DEFAULT_PARAMS`:
+
+| Group | Examples |
+|-------|----------|
+| Optional hardware | `MicroSen`, `NobodySave`, `UnmanedShutDown`, `UnmanedOffTime` |
+| Model-specific | `UvcControl`, `PM2P5`, `LigSen`, `AutoClean`, `ReplaceHEPA`, `EnvArea*n*St`, `DnP*Swing`, `UDFanPort`, `AssHt` |
+| Diagnostic / internal | Compressor/evaporator temps, fault aggregates, drain cols, sleep curve steps, `HeatCoolType`, `PowReduceType`, `PowReduceGear` |
+| Destructive / install | `ElcAllKwhClr`, `wifiReset`, `estateInsta21`–`estateInsta24` |
+| Noisy system state | `wifiStatus`, `ElcEn`, `ImgUpdateCol`, `ImgVerSta`, `VocVerSta`, `VocUpdateCol` |
+
+**Stay enabled by default** (when the device echoes the key): outdoor/environment
+temperature, humidity, filter status (`Dfltr`), timer helpers, display offset
+(`TemRec`), and main swing selects (`SwingLfRig`, `SwUpDn`).
 
 ---
 
@@ -257,10 +290,12 @@ not change behaviour — see [hardware-notes.md](hardware-notes.md).
 
 ```text
 params_catalog.py
-  ALL_KNOWN_PARAMS     — requested on first poll / probe status (default)
-  SWITCH_DESCRIPTIONS  — one switch per wire key
+  ALL_KNOWN_PARAMS              — requested on first poll / probe status (default)
+  DISABLED_BY_DEFAULT_PARAMS    — optional/model/diagnostic/destructive/noisy cols
+  param_disabled_by_default()   — per-entity HA registry policy (excludes climate)
+  SWITCH_DESCRIPTIONS           — one switch per wire key
   EXTRA_SENSOR_DESCRIPTIONS, BINARY_SENSOR_DESCRIPTIONS, NUMBER_DESCRIPTIONS
-  diagnostic_params()  — unmapped supported keys → raw diagnostic sensors
+  diagnostic_params()           — unmapped supported keys → raw diagnostic sensors
 
 device.py
   supported_params     — cached reply cols after first full-catalog poll

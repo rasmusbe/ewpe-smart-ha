@@ -2,12 +2,21 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from homeassistant.config_entries import ConfigEntry
 
 from .const import CONF_MAC
 from .device import EwpeDevice
 
 _INVALID_MAC = frozenset({"", "0", "00:00:00:00:00:00", "000000000000"})
+
+
+def is_valid_status_mac(value: Any) -> bool:
+    """True when a status-reported ``mac`` col is usable (not a placeholder)."""
+    if value is None:
+        return False
+    return str(value).strip().casefold() not in _INVALID_MAC
 
 
 def config_device_mac(entry: ConfigEntry, device: EwpeDevice) -> str:

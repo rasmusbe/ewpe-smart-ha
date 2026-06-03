@@ -584,6 +584,99 @@ def _explicit_entity_params() -> frozenset[str]:
 
 EXPLICIT_ENTITY_PARAMS: frozenset[str] = _explicit_entity_params()
 
+# ── Disabled by default (HA entity registry) ───────────────────────────────
+# Optional hardware, model-specific, internal diagnostics, destructive cols,
+# and low-value system state. Users enable entities in HA when hardware matches.
+# See docs/parameters.md — canonical list; do not disable CLIMATE_PARAMS here.
+
+DISABLED_BY_DEFAULT_OPTIONAL_HARDWARE: frozenset[str] = frozenset(
+    {
+        "MicroSen",
+        "UnmanedShutDown",
+        "UnmanedOffTime",
+        "NobodySave",
+    }
+)
+
+DISABLED_BY_DEFAULT_MODEL_SPECIFIC: frozenset[str] = frozenset(
+    {
+        "AssHt",
+        "AutoClean",
+        "AutoCleanSta",
+        "AutoCleanStaEx",
+        "DnPLLRSwing",
+        "DnPRLRSwing",
+        "DnPUDSwing",
+        "LigSen",
+        "PM2P5",
+        "ReplaceHEPA",
+        "UDFanPort",
+        "UvcControl",
+        *(f"EnvArea{i}St" for i in range(1, 10)),
+    }
+)
+
+DISABLED_BY_DEFAULT_DIAGNOSTIC: frozenset[str] = frozenset(
+    {
+        "AllErr",
+        "BlkTemCom",
+        "CompressorFqy",
+        "CompressorTem",
+        "CpsTem",
+        "DFPoint",
+        "Dpump",
+        "DwatFul",
+        "DwatSen",
+        "FaultDisplay",
+        "FbidBloPer",
+        "HeatCoolType",
+        "InEvaTem",
+        "JFErrorCode",
+        "PowReduceGear",
+        "PowReduceType",
+        "ShutdownFault",
+        "SubhealthFault",
+        "TemsSenOut",
+        "busVol",
+        *(f"Slp1H{i}" for i in range(1, 9)),
+        *(f"Slp1L{i}" for i in range(1, 9)),
+    }
+)
+
+DISABLED_BY_DEFAULT_DESTRUCTIVE: frozenset[str] = frozenset(
+    {
+        "ElcAllKwhClr",
+        "wifiReset",
+        *(f"estateInsta{i}" for i in range(21, 25)),
+    }
+)
+
+DISABLED_BY_DEFAULT_NOISY: frozenset[str] = frozenset(
+    {
+        "ElcEn",
+        "ImgUpdateCol",
+        "ImgVerSta",
+        "VocUpdateCol",
+        "VocVerSta",
+        "wifiStatus",
+    }
+)
+
+DISABLED_BY_DEFAULT_PARAMS: frozenset[str] = (
+    DISABLED_BY_DEFAULT_OPTIONAL_HARDWARE
+    | DISABLED_BY_DEFAULT_MODEL_SPECIFIC
+    | DISABLED_BY_DEFAULT_DIAGNOSTIC
+    | DISABLED_BY_DEFAULT_DESTRUCTIVE
+    | DISABLED_BY_DEFAULT_NOISY
+)
+
+
+def param_disabled_by_default(param: str) -> bool:
+    """Whether Home Assistant should register the entity disabled by default."""
+    if param in CLIMATE_PARAMS or param in WIND_SPEED_PARAMS:
+        return False
+    return param in DISABLED_BY_DEFAULT_PARAMS
+
 
 def diagnostic_params(data: Mapping[str, Any]) -> tuple[str, ...]:
     """Return unmapped wire keys that should become generic diagnostic sensors."""

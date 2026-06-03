@@ -12,7 +12,11 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, MANUFACTURER
 from .coordinator import EwpeCoordinator
-from .params_catalog import NUMBER_DESCRIPTIONS, NumberDescriptionRef
+from .params_catalog import (
+    NUMBER_DESCRIPTIONS,
+    NumberDescriptionRef,
+    param_disabled_by_default,
+)
 
 _MODE = {
     "auto": NumberMode.AUTO,
@@ -69,6 +73,8 @@ class EwpeNumberEntity(CoordinatorEntity[EwpeCoordinator], NumberEntity):
         if description.native_unit_of_measurement:
             unit = description.native_unit_of_measurement
             self._attr_native_unit_of_measurement = _UNIT.get(unit, unit)
+        if param_disabled_by_default(description.param):
+            self._attr_disabled_by_default = True
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, device.mac or entry.entry_id)},
             name=device.name or entry.title,

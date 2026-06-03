@@ -39,6 +39,20 @@ def _make_sensor(param: str, value: int) -> EwpeExtraSensor:
     return EwpeExtraSensor(coordinator, entry, description)
 
 
+def test_supported_extra_sensor_descriptions_excludes_placeholder_mac() -> None:
+    data = {PARAM_OUTDOOR_TEMP: 22, "mac": 0}
+    descriptions = supported_extra_sensor_descriptions(data)
+    params = {d.param for d in descriptions}
+    assert params == {PARAM_OUTDOOR_TEMP}
+
+
+def test_supported_extra_sensor_descriptions_includes_valid_mac() -> None:
+    data = {PARAM_OUTDOOR_TEMP: 22, "mac": "580d0df2deaf"}
+    descriptions = supported_extra_sensor_descriptions(data)
+    params = {d.param for d in descriptions}
+    assert params == {PARAM_OUTDOOR_TEMP, "mac"}
+
+
 def test_supported_extra_sensor_descriptions_filters_by_status_keys() -> None:
     data = {
         "Pow": 1,

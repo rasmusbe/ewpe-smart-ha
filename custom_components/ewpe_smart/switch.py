@@ -16,7 +16,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, MANUFACTURER, POWER_OFF, POWER_ON
 from .coordinator import EwpeCoordinator
 from .entity_identity import config_device_identifier, config_device_mac
-from .params_catalog import SWITCH_DESCRIPTIONS
+from .params_catalog import SWITCH_DESCRIPTIONS, param_disabled_by_default
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -81,6 +81,8 @@ class EwpeSwitchEntity(CoordinatorEntity[EwpeCoordinator], SwitchEntity):
             model=device.info.get("model") if device.info else None,
             sw_version=device.info.get("ver") if device.info else None,
         )
+        if param_disabled_by_default(description.param):
+            self._attr_disabled_by_default = True
 
     @property
     def is_on(self) -> bool | None:

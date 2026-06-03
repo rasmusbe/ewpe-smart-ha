@@ -24,11 +24,13 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, MANUFACTURER, PARAM_TEMP_SENSOR
 from .coordinator import EwpeCoordinator
+from .entity_identity import is_valid_status_mac
 from .params_catalog import (
     EXTRA_SENSOR_DESCRIPTIONS,
     SensorDescriptionRef,
     TEMP_OFFSET_PARAMS,
     diagnostic_params,
+    param_disabled_by_default,
 )
 
 _DEVICE_CLASS = {
@@ -57,7 +59,12 @@ def supported_extra_sensor_descriptions(
     data: dict[str, Any],
 ) -> tuple[SensorDescriptionRef, ...]:
     """Return explicit sensor descriptions whose param appeared in a status reply."""
-    return tuple(desc for desc in EXTRA_SENSOR_DESCRIPTIONS if desc.param in data)
+    return tuple(
+        desc
+        for desc in EXTRA_SENSOR_DESCRIPTIONS
+        if desc.param in data
+        and (desc.param != "mac" or is_valid_status_mac(data[desc.param]))
+    )
 
 
 def _slugify_param(param: str) -> str:
@@ -148,6 +155,8 @@ class EwpeExtraSensor(_EwpeSensorBase):
         if description.native_unit_of_measurement:
             unit = description.native_unit_of_measurement
             self._attr_native_unit_of_measurement = _UNIT.get(unit, unit)
+        if param_disabled_by_default(description.param):
+            self._attr_disabled_by_default = True
 
     @property
     def native_value(self) -> float | int | str | None:
@@ -194,6 +203,7 @@ class EwpeDiagnosticSensor(_EwpeSensorBase):
         slug = _slugify_param(param)
         self._attr_name = param
         self._attr_unique_id = f"{device.mac}_raw_{slug}"
+        self._attr_disabled_by_default = True
 
     @property
     def native_value(self) -> int | None:

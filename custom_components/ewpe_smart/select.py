@@ -37,6 +37,7 @@ from .const import (
     WIND_SPEED_FAN_TO_OPTION,
 )
 from .coordinator import EwpeCoordinator
+from .params_catalog import param_disabled_by_default
 
 WIND_SPEED_BASE_OPTIONS: tuple[str, ...] = (
     "auto",
@@ -106,6 +107,29 @@ class EwpeSelectDescription:
     device_to_option: dict[int, str]
 
 
+_SUB_ZONE_SWING_PARAMS = frozenset(
+    {
+        PARAM_SUB_ZONE_SWING_UD,
+        PARAM_SUB_ZONE_SWING_RIGHT,
+        PARAM_SUB_ZONE_SWING_LEFT,
+    }
+)
+
+
+def _select_param_supported(
+    description: EwpeSelectDescription, data: Mapping[str, int]
+) -> bool:
+    """Whether a swing select should be created for this status snapshot."""
+    if description.param not in data:
+        return False
+    if description.param not in _SUB_ZONE_SWING_PARAMS:
+        return True
+    value = data[description.param]
+    if value is None:
+        return False
+    return int(value) in description.device_to_option
+
+
 SELECT_DESCRIPTIONS: tuple[EwpeSelectDescription, ...] = (
     EwpeSelectDescription(
         param=PARAM_SWING_HORIZONTAL,
@@ -143,8 +167,10 @@ SELECT_DESCRIPTIONS: tuple[EwpeSelectDescription, ...] = (
 def supported_select_descriptions(
     data: Mapping[str, int],
 ) -> tuple[EwpeSelectDescription, ...]:
-    """Return swing select descriptions whose param appeared in a status reply."""
-    return tuple(desc for desc in SELECT_DESCRIPTIONS if desc.param in data)
+    """Return swing selects supported by this device snapshot."""
+    return tuple(
+        desc for desc in SELECT_DESCRIPTIONS if _select_param_supported(desc, data)
+    )
 
 
 async def async_setup_entry(
@@ -232,6 +258,8 @@ class EwpeSwingSelectEntity(_EwpeSelectBase):
         self._attr_translation_key = description.translation_key
         self._attr_options = list(description.device_to_option.values())
         self._attr_unique_id = f"{device.mac}_{description.unique_id_suffix}"
+        if param_disabled_by_default(description.param):
+            self._attr_disabled_by_default = True
 
     @property
     def current_option(self) -> str | None:

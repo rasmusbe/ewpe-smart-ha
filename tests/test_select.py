@@ -9,6 +9,9 @@ import pytest
 from custom_components.ewpe_smart.const import (
     PARAM_FAN_SPEED,
     PARAM_QUIET,
+    PARAM_SUB_ZONE_SWING_LEFT,
+    PARAM_SUB_ZONE_SWING_RIGHT,
+    PARAM_SUB_ZONE_SWING_UD,
     PARAM_SWING_HORIZONTAL,
     PARAM_SWING_VERTICAL,
     PARAM_TUR,
@@ -83,6 +86,29 @@ def test_supported_select_descriptions_filters_by_status_keys() -> None:
     descriptions = supported_select_descriptions(data)
     params = {d.param for d in descriptions}
     assert params == {"SwingLfRig", "SwUpDn"}
+
+
+def test_supported_select_descriptions_excludes_sub_zone_when_unmapped() -> None:
+    data = {
+        "SwingLfRig": 1,
+        "SwUpDn": 6,
+        PARAM_SUB_ZONE_SWING_UD: 0,
+        PARAM_SUB_ZONE_SWING_RIGHT: 0,
+        PARAM_SUB_ZONE_SWING_LEFT: 0,
+    }
+    descriptions = supported_select_descriptions(data)
+    params = {d.param for d in descriptions}
+    assert params == {"SwingLfRig", "SwUpDn"}
+
+
+def test_supported_select_descriptions_includes_sub_zone_when_mapped() -> None:
+    data = {
+        "SwingLfRig": 1,
+        PARAM_SUB_ZONE_SWING_UD: 6,
+    }
+    descriptions = supported_select_descriptions(data)
+    params = {d.param for d in descriptions}
+    assert params == {"SwingLfRig", PARAM_SUB_ZONE_SWING_UD}
 
 
 def test_swing_current_option_maps_device_value() -> None:
