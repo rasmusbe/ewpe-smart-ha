@@ -69,6 +69,20 @@ python3 tools/probe.py status 192.168.1.50 \
 
 Use this to verify what HA sees after entity discovery.
 
+### Status (custom columns)
+
+Request specific wire keys only — useful when a param accepts `set` but is
+omitted from full discovery `cols` (for example `BuzzerCtrl`):
+
+```bash
+python3 tools/probe.py status 192.168.1.50 \
+  --key 'YOUR_DEVICE_KEY' \
+  --mac 'AA:BB:CC:DD:EE:FF' \
+  --cols BuzzerCtrl Buzzer_ON_OFF
+```
+
+Keys the firmware does not expose in status are listed as `not in reply`.
+
 ### Set parameters
 
 ```bash

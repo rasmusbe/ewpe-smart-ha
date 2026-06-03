@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from custom_components.ewpe_smart.const import (
+    CONF_MAC,
     PARAM_BEEPER,
     PARAM_BEEPER_NEW,
     PARAM_LIG,
@@ -40,6 +41,7 @@ def _make_switch(
     entry = MagicMock()
     entry.entry_id = "abc"
     entry.title = "Test"
+    entry.data = {CONF_MAC: "580d0df2deaf"}
 
     entity = EwpeSwitchEntity(coordinator, entry, description)
     return entity, device
@@ -85,6 +87,16 @@ def test_quiet_is_not_exposed_as_switch() -> None:
     descriptions = supported_switch_descriptions(data)
     params = {d.param for d in descriptions}
     assert PARAM_QUIET not in params
+
+
+def test_switch_unique_id_uses_config_mac() -> None:
+    entity, _ = _make_switch({"Lig": 1})
+    assert entity.unique_id == "580d0df2deaf_display_light"
+
+
+def test_switch_fallback_name_uses_wire_param() -> None:
+    entity, _ = _make_switch({"Lig": 1})
+    assert entity._attr_name == PARAM_LIG
 
 
 def test_is_on_reflects_param_value() -> None:

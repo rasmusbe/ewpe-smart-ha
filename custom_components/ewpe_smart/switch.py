@@ -15,6 +15,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, MANUFACTURER, POWER_OFF, POWER_ON
 from .coordinator import EwpeCoordinator
+from .entity_identity import config_device_identifier, config_device_mac
 from .params_catalog import SWITCH_DESCRIPTIONS
 
 
@@ -70,10 +71,13 @@ class EwpeSwitchEntity(CoordinatorEntity[EwpeCoordinator], SwitchEntity):
         super().__init__(coordinator)
         self._description = description
         device = coordinator.device
+        device_mac = config_device_mac(entry, device)
         self._attr_translation_key = description.translation_key
-        self._attr_unique_id = f"{device.mac}_{description.unique_id_suffix}"
+        # Fallback when translations are missing — avoids duplicate switch.ac_* ids.
+        self._attr_name = description.param
+        self._attr_unique_id = f"{device_mac}_{description.unique_id_suffix}"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, device.mac or entry.entry_id)},
+            identifiers={(DOMAIN, config_device_identifier(entry, device))},
             name=device.name or entry.title,
             manufacturer=MANUFACTURER,
             model=device.info.get("model") if device.info else None,

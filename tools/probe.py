@@ -14,6 +14,8 @@ Usage:
     python3 tools/probe.py 192.168.1.50 --decrypt
     python3 tools/probe.py scan 192.168.1.50 --decrypt --bind
     python3 tools/probe.py status 192.168.1.50 --key DEVICEKEY --mac AA:BB:...
+    python3 tools/probe.py status 192.168.1.50 --key DEVICEKEY --mac AA:BB:... \\
+        --cols BuzzerCtrl Buzzer_ON_OFF
     python3 tools/probe.py set 192.168.1.50 --key DEVICEKEY --mac AA:BB:... Quiet=1
 """
 
@@ -21,21 +23,32 @@ from __future__ import annotations
 
 import argparse
 import base64
+import importlib.util
 import json
 import socket
 import sys
 from pathlib import Path
 
-# Allow importing the parameter catalog without Home Assistant installed.
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
 
-from custom_components.ewpe_smart.params_catalog import (  # noqa: E402
-    ALL_KNOWN_PARAMS,
-    SWITCH_PARAM_NAMES,
-    param_batches,
-)
+
+def _load_params_catalog():
+    """Load params_catalog without triggering ewpe_smart's HA __init__."""
+    path = _REPO_ROOT / "custom_components" / "ewpe_smart" / "params_catalog.py"
+    spec = importlib.util.spec_from_file_location("ewpe_params_catalog", path)
+    if spec is None or spec.loader is None:
+        msg = f"cannot load parameter catalog from {path}"
+        raise ImportError(msg)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+_catalog = _load_params_catalog()
+ALL_KNOWN_PARAMS = _catalog.ALL_KNOWN_PARAMS
+SWITCH_PARAM_NAMES = _catalog.SWITCH_PARAM_NAMES
+param_batches = _catalog.param_batches
 
 PORT = 7000
 TIMEOUT = 5.0
@@ -380,11 +393,25 @@ def _fetch_status(
 
 
 def cmd_status(
-    ip: str, key: str, mac: str, version: int | None, *, runtime: bool = False, export_cols: bool = False
+    ip: str,
+    key: str,
+    mac: str,
+    version: int | None,
+    *,
+    runtime: bool = False,
+    custom_cols: list[str] | None = None,
+    export_cols: bool = False,
 ) -> int:
     device_key = key.encode("utf-8")
-    request_cols = RUNTIME_PARAMS if runtime else DISCOVERY_PARAMS
-    mode_label = "runtime" if runtime else "discovery"
+    if custom_cols:
+        request_cols = list(custom_cols)
+        mode_label = "custom"
+    elif runtime:
+        request_cols = RUNTIME_PARAMS
+        mode_label = "runtime"
+    else:
+        request_cols = DISCOVERY_PARAMS
+        mode_label = "discovery"
     version_label = f"v{version}" if version else "auto"
     out = sys.stderr if export_cols else sys.stdout
     print(
@@ -412,12 +439,19 @@ def cmd_status(
     print(f"[{ip}]   cols ({len(cols)}): {cols}")
     for name, value in status.items():
         print(f"[{ip}]     {name} = {value}")
+    if custom_cols:
+        missing = [c for c in request_cols if c not in cols]
+        if missing:
+            print(f"[{ip}]   not in reply: {', '.join(missing)}")
     switch_cols = [c for c in cols if c in SWITCH_PARAMS]
     if switch_cols:
         print(f"[{ip}]   supported switches: {', '.join(switch_cols)}")
     else:
         print(f"[{ip}]   supported switches: (none in reply)")
-    print(f"[{ip}]   catalog coverage: {len(cols)}/{len(ALL_KNOWN_PARAMS)} known params")
+    if custom_cols:
+        print(f"[{ip}]   requested {len(request_cols)} col(s), got {len(cols)} in reply")
+    else:
+        print(f"[{ip}]   catalog coverage: {len(cols)}/{len(ALL_KNOWN_PARAMS)} known params")
     return 0
 
 
@@ -520,10 +554,17 @@ def main(argv: list[str]) -> int:
 
     status_parser = subparsers.add_parser("status", help="Read device status")
     _add_device_args(status_parser)
-    status_parser.add_argument(
+    status_mode = status_parser.add_mutually_exclusive_group()
+    status_mode.add_argument(
         "--runtime",
         action="store_true",
         help="Poll runtime core params only; default requests full catalog",
+    )
+    status_mode.add_argument(
+        "--cols",
+        nargs="+",
+        metavar="COL",
+        help="Request only these wire keys (e.g. --cols BuzzerCtrl Buzzer_ON_OFF)",
     )
     status_parser.add_argument(
         "--export-cols",
@@ -557,6 +598,7 @@ def main(argv: list[str]) -> int:
             args.mac,
             args.version,
             runtime=args.runtime,
+            custom_cols=args.cols,
             export_cols=args.export_cols,
         )
 
