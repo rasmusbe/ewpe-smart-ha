@@ -193,6 +193,15 @@ your model and firmware version (`ver` from the device reply).
 Usually means the bind handshake succeeded but a status reply did not match the
 expected schema. Open an issue with debug logs (see below).
 
+### The device changed IP address
+
+When a poll times out, the integration broadcasts a scan and follows the unit to
+its new address if the MAC matches, then writes that address back to the config
+entry. If broadcast does not reach the device (routed VLAN, Docker bridge
+networking), use **Settings → Devices & Services → EWPE Smart → Reconfigure** and
+type the new IP manually. A DHCP reservation for the AC avoids the problem
+altogether.
+
 ### Re-authentication required
 
 If you've reset the AC controller (factory reset, firmware update, etc.) the
