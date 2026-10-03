@@ -118,8 +118,34 @@ async def test_at_least_one_setting_is_required(hass: HomeAssistant) -> None:
         await _set_state(hass)
 
 
-async def test_quiet_turbo_switches_raise_a_repair_issue(hass: HomeAssistant) -> None:
+async def test_deprecated_switches_start_disabled_and_enabled_ones_raise_issue(
+    hass: HomeAssistant,
+) -> None:
+    from homeassistant.helpers import entity_registry as er
     from homeassistant.helpers import issue_registry as ir
 
     await _setup(hass, STATUS)
-    assert ir.async_get(hass).issues  # one issue per entry with the switches
+    registry = er.async_get(hass)
+    quiet = registry.async_get("switch.living_room_ac_quiet")
+    assert quiet.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    assert not ir.async_get(hass).issues
+
+
+async def test_enabling_a_deprecated_switch_raises_issue(hass: HomeAssistant) -> None:
+    from homeassistant.helpers import entity_registry as er
+    from homeassistant.helpers import issue_registry as ir
+
+    await _setup(hass, STATUS)
+    registry = er.async_get(hass)
+    entity = registry.async_get("switch.living_room_ac_quiet")
+    registry.async_update_entity(entity.entity_id, disabled_by=None)
+    entry = hass.config_entries.async_entries(DOMAIN)[0]
+    await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert len(ir.async_get(hass).issues) == 1
+
+    registry.async_update_entity(
+        entity.entity_id, disabled_by=er.RegistryEntryDisabler.USER
+    )
+    await hass.async_block_till_done()
+    assert not ir.async_get(hass).issues

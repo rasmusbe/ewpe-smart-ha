@@ -137,7 +137,7 @@ data:
 
 Every field is optional, but at least one is required. Values are checked before anything is sent: an unsupported mode or fan mode, or a temperature outside 16-30 °C, raises an error and the unit does not beep.
 
-`quiet` and `turbo` are fan modes, available on units that report them. Picking one clears the other, and picking a fixed step clears both. The separate Quiet and Turbo switches are deprecated, raise a repair issue and will be removed in a later release.
+`quiet` and `turbo` are fan modes, available on units that report them. Picking one clears the other, and picking a fixed step clears both. The separate Quiet and Turbo switches are deprecated, disabled by default on new installs, raise a repair issue while enabled and will be removed in a later release.
 
 ## Options
 

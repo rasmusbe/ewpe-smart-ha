@@ -104,7 +104,8 @@ def supported_switch_descriptions(
 
 
 # Quiet and turbo moved to the climate fan modes. The switches stay for one
-# release and are then removed.
+# release and are then removed. They are disabled by default on new installs,
+# and a repair issue is raised for every enabled one.
 DEPRECATED_SWITCH_PARAMS = frozenset({PARAM_QUIET, PARAM_TUR})
 
 
@@ -115,23 +116,10 @@ async def async_setup_entry(
 ) -> None:
     """Register switch entities supported by this device."""
     coordinator = entry.runtime_data
-    descriptions = supported_switch_descriptions(coordinator.data or {})
     async_add_entities(
-        EwpeSwitchEntity(coordinator, description) for description in descriptions
+        EwpeSwitchEntity(coordinator, description)
+        for description in supported_switch_descriptions(coordinator.data or {})
     )
-    issue_id = f"quiet_turbo_switches_{entry.entry_id}"
-    if any(d.param in DEPRECATED_SWITCH_PARAMS for d in descriptions):
-        ir.async_create_issue(
-            hass,
-            DOMAIN,
-            issue_id,
-            is_fixable=False,
-            severity=ir.IssueSeverity.WARNING,
-            translation_key="quiet_turbo_switches",
-            translation_placeholders={"name": entry.title},
-        )
-    else:
-        ir.async_delete_issue(hass, DOMAIN, issue_id)
 
 
 class EwpeSwitchEntity(EwpeEntity, SwitchEntity):
@@ -145,8 +133,32 @@ class EwpeSwitchEntity(EwpeEntity, SwitchEntity):
         super().__init__(coordinator, description.unique_id_suffix)
         self._description = description
         self._attr_translation_key = description.translation_key
-        if param_disabled_by_default(description.param):
+        if (
+            param_disabled_by_default(description.param)
+            or description.param in DEPRECATED_SWITCH_PARAMS
+        ):
             self._attr_entity_registry_enabled_default = False
+
+    @property
+    def _issue_id(self) -> str:
+        return f"deprecated_switch_{self._attr_unique_id}"
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if self._description.param in DEPRECATED_SWITCH_PARAMS:
+            ir.async_create_issue(
+                self.hass,
+                DOMAIN,
+                self._issue_id,
+                is_fixable=False,
+                severity=ir.IssueSeverity.WARNING,
+                translation_key="deprecated_fan_mode_switch",
+                translation_placeholders={"entity_id": self.entity_id},
+            )
+
+    async def async_will_remove_from_hass(self) -> None:
+        ir.async_delete_issue(self.hass, DOMAIN, self._issue_id)
+        await super().async_will_remove_from_hass()
 
     @property
     def is_on(self) -> bool | None:

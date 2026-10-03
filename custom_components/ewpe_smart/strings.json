@@ -551,9 +551,9 @@
     }
   },
   "issues": {
-    "quiet_turbo_switches": {
+    "deprecated_fan_mode_switch": {
       "title": "Quiet and Turbo switches are deprecated",
-      "description": "The Quiet and Turbo switches of {name} will be removed in a later release. Quiet and Turbo are now fan modes on the climate entity. Use the fan mode (or the fan_mode field of ewpe_smart.set_state) in your automations and dashboards instead of the switches."
+      "description": "{entity_id} will be removed in a later release. Quiet and Turbo are now fan modes on the climate entity. Use the fan mode (or the fan_mode field of ewpe_smart.set_state) in your automations and dashboards, then disable this switch."
     }
   },
   "exceptions": {
