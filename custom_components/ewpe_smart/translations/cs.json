@@ -191,7 +191,7 @@
         "step": {
           "confirm": {
             "title": "Vypnout {entity_id}?",
-            "description": "Tím se {entity_id} vypne. Do odstranění ho můžete znovu zapnout v nastavení entity."
+            "description": "{entity_id} bude v některém z dalších vydání odstraněn. Tichý režim je nově režim ventilátoru u entity klimatizace. V automatizacích a na dashboardech používejte ten (nebo pole fan_mode u ewpe_smart.set_state).\n\nVypnout {entity_id} teď? Do odstranění ho můžete znovu zapnout v nastavení entity."
           }
         }
       },
@@ -203,7 +203,7 @@
         "step": {
           "confirm": {
             "title": "Vypnout {entity_id}?",
-            "description": "Tím se {entity_id} vypne. Do odstranění ho můžete znovu zapnout v nastavení entity."
+            "description": "{entity_id} bude v některém z dalších vydání odstraněn. Turbo je nově režim ventilátoru u entity klimatizace. V automatizacích a na dashboardech používejte ten (nebo pole fan_mode u ewpe_smart.set_state).\n\nVypnout {entity_id} teď? Do odstranění ho můžete znovu zapnout v nastavení entity."
           }
         }
       },

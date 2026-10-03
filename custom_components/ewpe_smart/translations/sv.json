@@ -557,7 +557,7 @@
         "step": {
           "confirm": {
             "title": "Inaktivera {entity_id}?",
-            "description": "Det här inaktiverar {entity_id}. Du kan aktivera den igen i entitetsinställningarna tills den tas bort."
+            "description": "{entity_id} tas bort i en senare version. Tyst är numera ett fläktläge på klimatentiteten. Använd det (eller fältet fan_mode i ewpe_smart.set_state) i dina automationer och på dina dashboards.\n\nInaktivera {entity_id} nu? Du kan aktivera den igen i entitetsinställningarna tills den tas bort."
           }
         }
       },
@@ -569,7 +569,7 @@
         "step": {
           "confirm": {
             "title": "Inaktivera {entity_id}?",
-            "description": "Det här inaktiverar {entity_id}. Du kan aktivera den igen i entitetsinställningarna tills den tas bort."
+            "description": "{entity_id} tas bort i en senare version. Turbo är numera ett fläktläge på klimatentiteten. Använd det (eller fältet fan_mode i ewpe_smart.set_state) i dina automationer och på dina dashboards.\n\nInaktivera {entity_id} nu? Du kan aktivera den igen i entitetsinställningarna tills den tas bort."
           }
         }
       },
