@@ -123,7 +123,7 @@ dashboards or for use in automations independently of the climate entity.
 
 ### `ewpe_smart.set_state`
 
-The unit beeps on every command it receives. Mode, target temperature, fan mode, quiet and turbo sit on different entities, so an automation that changes several of them beeps once per entity. `ewpe_smart.set_state` takes any combination of the five and sends them in one command:
+The unit beeps on every command it receives. Mode, target temperature and fan mode are separate properties of the climate entity, so an automation that changes several of them beeps once per call. `ewpe_smart.set_state` takes any combination of the three and sends them in one command:
 
 ```yaml
 action: ewpe_smart.set_state
@@ -132,11 +132,12 @@ target:
 data:
   hvac_mode: heat
   temperature: 22
-  fan_mode: auto
-  quiet: true
+  fan_mode: quiet
 ```
 
-Every field is optional, but at least one is required. Values are checked before anything is sent: an unsupported mode or fan mode, a temperature outside 16-30 °C, or `quiet`/`turbo` on a unit that does not report them raises an error and the unit does not beep.
+Every field is optional, but at least one is required. Values are checked before anything is sent: an unsupported mode or fan mode, or a temperature outside 16-30 °C, raises an error and the unit does not beep.
+
+`quiet` and `turbo` are fan modes, available on units that report them. Picking one clears the other, and picking a fixed step clears both. The separate Quiet and Turbo switches are deprecated, raise a repair issue and will be removed in a later release.
 
 ## Options
 

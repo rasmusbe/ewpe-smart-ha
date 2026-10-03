@@ -65,18 +65,26 @@ async def _set_state(hass: HomeAssistant, **data) -> None:
 async def test_everything_goes_out_in_one_packet(hass: HomeAssistant) -> None:
     mock = await _setup(hass, STATUS)
     await _set_state(
-        hass, hvac_mode="heat", temperature=22, fan_mode="medium_low", quiet=True
+        hass, hvac_mode="heat", temperature=22, fan_mode="quiet"
     )
     assert mock.received_commands == [
-        {"opt": ["Pow", "Mod", "SetTem", "WdSpd", "Quiet"], "p": [1, 4, 22, 2, 2]}
+        {"opt": ["Pow", "Mod", "SetTem", "Quiet", "Tur"], "p": [1, 4, 22, 2, 0]}
     ]
     assert hass.states.get(ENTITY_ID).state == "heat"
 
 
-async def test_quiet_and_turbo_off_write_zero(hass: HomeAssistant) -> None:
-    mock = await _setup(hass, {**STATUS, "Quiet": 2, "Tur": 1})
-    await _set_state(hass, quiet=False, turbo=False)
-    assert mock.received_commands == [{"opt": ["Quiet", "Tur"], "p": [0, 0]}]
+async def test_fixed_step_clears_quiet_and_turbo(hass: HomeAssistant) -> None:
+    mock = await _setup(hass, {**STATUS, "Quiet": 2})
+    await _set_state(hass, fan_mode="high")
+    assert mock.received_commands == [
+        {"opt": ["WdSpd", "Quiet", "Tur"], "p": [5, 0, 0]}
+    ]
+
+
+async def test_turbo_replaces_quiet(hass: HomeAssistant) -> None:
+    mock = await _setup(hass, {**STATUS, "Quiet": 2})
+    await _set_state(hass, fan_mode="turbo")
+    assert mock.received_commands == [{"opt": ["Quiet", "Tur"], "p": [0, 1]}]
 
 
 @pytest.mark.parametrize(
@@ -100,7 +108,7 @@ async def test_quiet_on_unit_without_quiet_is_rejected(hass: HomeAssistant) -> N
     status = {k: v for k, v in STATUS.items() if k not in ("Quiet", "Tur")}
     mock = await _setup(hass, status)
     with pytest.raises(ServiceValidationError):
-        await _set_state(hass, quiet=True)
+        await _set_state(hass, fan_mode="quiet")
     assert mock.received_commands == []
 
 
@@ -108,3 +116,10 @@ async def test_at_least_one_setting_is_required(hass: HomeAssistant) -> None:
     await _setup(hass, STATUS)
     with pytest.raises(Exception, match="at least one"):
         await _set_state(hass)
+
+
+async def test_quiet_turbo_switches_raise_a_repair_issue(hass: HomeAssistant) -> None:
+    from homeassistant.helpers import issue_registry as ir
+
+    await _setup(hass, STATUS)
+    assert ir.async_get(hass).issues  # one issue per entry with the switches

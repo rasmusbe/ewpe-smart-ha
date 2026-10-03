@@ -78,25 +78,25 @@ FAN_MODE_TO_DEVICE: dict[str, int] = {
 }
 DEVICE_TO_FAN_MODE: dict[int, str] = {v: k for k, v in FAN_MODE_TO_DEVICE.items()}
 
+# Quiet and turbo are fan modes in the EWPE Smart app: picking either replaces
+# the other, and picking a fixed step clears both. They only exist as modes on
+# units that report the matching wire key.
+FAN_QUIET = "quiet"
+FAN_TURBO = "turbo"
+
 
 SERVICE_SET_STATE = "set_state"
 ATTR_FAN_MODE = "fan_mode"
-ATTR_QUIET = "quiet"
-ATTR_TURBO = "turbo"
 
 # The unit beeps once per command, so this service writes any combination of
-# mode, target, fan, quiet and turbo in a single packet.
+# mode, target and fan mode in a single packet.
 SET_STATE_SCHEMA = vol.All(
-    cv.has_at_least_one_key(
-        ATTR_HVAC_MODE, ATTR_TEMPERATURE, ATTR_FAN_MODE, ATTR_QUIET, ATTR_TURBO
-    ),
+    cv.has_at_least_one_key(ATTR_HVAC_MODE, ATTR_TEMPERATURE, ATTR_FAN_MODE),
     cv.make_entity_service_schema(
         {
             vol.Optional(ATTR_HVAC_MODE): vol.Coerce(HVACMode),
             vol.Optional(ATTR_TEMPERATURE): vol.Coerce(float),
             vol.Optional(ATTR_FAN_MODE): cv.string,
-            vol.Optional(ATTR_QUIET): cv.boolean,
-            vol.Optional(ATTR_TURBO): cv.boolean,
         }
     ),
 )
@@ -141,7 +141,6 @@ class EwpeClimateEntity(EwpeEntity, ClimateEntity):
         HVACMode.DRY,
         HVACMode.FAN_ONLY,
     ]
-    _attr_fan_modes = list(FAN_MODE_TO_DEVICE)
     _attr_supported_features = (
         ClimateEntityFeature.TARGET_TEMPERATURE
         | ClimateEntityFeature.FAN_MODE
@@ -166,7 +165,20 @@ class EwpeClimateEntity(EwpeEntity, ClimateEntity):
         return DEVICE_TO_HVAC_MODE.get(mode)
 
     @property
+    def fan_modes(self) -> list[str]:
+        modes = list(FAN_MODE_TO_DEVICE)
+        if PARAM_QUIET in self._data:
+            modes.append(FAN_QUIET)
+        if PARAM_TUR in self._data:
+            modes.append(FAN_TURBO)
+        return modes
+
+    @property
     def fan_mode(self) -> str | None:
+        if self._data.get(PARAM_TUR):
+            return FAN_TURBO
+        if self._data.get(PARAM_QUIET):
+            return FAN_QUIET
         speed = self._data.get(PARAM_FAN_SPEED)
         if speed is None:
             return None
@@ -190,10 +202,19 @@ class EwpeClimateEntity(EwpeEntity, ClimateEntity):
         await self._send(_hvac_mode_params(hvac_mode))
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
-        device_speed = FAN_MODE_TO_DEVICE.get(fan_mode)
-        if device_speed is None:
+        if fan_mode not in self.fan_modes:
             raise ValueError(f"Unsupported fan_mode: {fan_mode}")
-        await self._send({PARAM_FAN_SPEED: device_speed})
+        await self._send(self._fan_mode_params(fan_mode))
+
+    def _fan_mode_params(self, fan_mode: str) -> dict[str, int]:
+        params: dict[str, int] = {}
+        if fan_mode in FAN_MODE_TO_DEVICE:
+            params[PARAM_FAN_SPEED] = FAN_MODE_TO_DEVICE[fan_mode]
+        if PARAM_QUIET in self._data:
+            params[PARAM_QUIET] = QUIET_MODE_ON if fan_mode == FAN_QUIET else POWER_OFF
+        if PARAM_TUR in self._data:
+            params[PARAM_TUR] = POWER_ON if fan_mode == FAN_TURBO else POWER_OFF
+        return params
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         # climate.set_temperature may carry hvac_mode; send both in one packet
@@ -224,18 +245,9 @@ class EwpeClimateEntity(EwpeEntity, ClimateEntity):
                 )
             params[PARAM_SET_TEMP] = int(round(temperature))
         if (fan_mode := kwargs.get(ATTR_FAN_MODE)) is not None:
-            if fan_mode not in FAN_MODE_TO_DEVICE:
+            if fan_mode not in self.fan_modes:
                 raise self._invalid("unsupported_fan_mode", fan_mode=fan_mode)
-            params[PARAM_FAN_SPEED] = FAN_MODE_TO_DEVICE[fan_mode]
-        for attr, param, on_value in (
-            (ATTR_QUIET, PARAM_QUIET, QUIET_MODE_ON),
-            (ATTR_TURBO, PARAM_TUR, POWER_ON),
-        ):
-            if (enabled := kwargs.get(attr)) is None:
-                continue
-            if param not in self._data:
-                raise self._invalid("not_supported_by_device", setting=attr)
-            params[param] = on_value if enabled else POWER_OFF
+            params.update(self._fan_mode_params(fan_mode))
         await self._send(params)
 
     def _invalid(self, key: str, **placeholders: str) -> ServiceValidationError:

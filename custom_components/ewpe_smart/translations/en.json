@@ -76,7 +76,9 @@
               "medium_low": "Medium low",
               "medium": "Medium",
               "medium_high": "Medium high",
-              "high": "High"
+              "high": "High",
+              "quiet": "Quiet",
+              "turbo": "Turbo"
             }
           }
         }
@@ -548,6 +550,12 @@
       }
     }
   },
+  "issues": {
+    "quiet_turbo_switches": {
+      "title": "Quiet and Turbo switches are deprecated",
+      "description": "The Quiet and Turbo switches of {name} will be removed in a later release. Quiet and Turbo are now fan modes on the climate entity. Use the fan mode (or the fan_mode field of ewpe_smart.set_state) in your automations and dashboards instead of the switches."
+    }
+  },
   "exceptions": {
     "command_failed": {
       "message": "Failed to send the command to the device: {error}"
@@ -560,15 +568,12 @@
     },
     "unsupported_fan_mode": {
       "message": "Fan mode {fan_mode} is not supported."
-    },
-    "not_supported_by_device": {
-      "message": "This unit does not report {setting}, so it cannot be set."
     }
   },
   "services": {
     "set_state": {
       "name": "Set state",
-      "description": "Sets mode, target temperature, fan mode, quiet and turbo in one command, so the unit beeps once.",
+      "description": "Sets mode, target temperature and fan mode (including quiet and turbo) in one command, so the unit beeps once.",
       "fields": {
         "hvac_mode": {
           "name": "HVAC mode",
@@ -581,14 +586,6 @@
         "fan_mode": {
           "name": "Fan mode",
           "description": "Fan step."
-        },
-        "quiet": {
-          "name": "Quiet",
-          "description": "Turn quiet mode on or off."
-        },
-        "turbo": {
-          "name": "Turbo",
-          "description": "Turn turbo mode on or off."
         }
       }
     }
@@ -611,7 +608,9 @@
         "medium_low": "Medium low",
         "medium": "Medium",
         "medium_high": "Medium high",
-        "high": "High"
+        "high": "High",
+        "quiet": "Quiet",
+        "turbo": "Turbo"
       }
     }
   }

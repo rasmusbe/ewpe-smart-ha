@@ -8,9 +8,11 @@ from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
+    DOMAIN,
     PARAM_AIR,
     PARAM_BLO,
     PARAM_HEALTH,
@@ -101,6 +103,11 @@ def supported_switch_descriptions(
     )
 
 
+# Quiet and turbo moved to the climate fan modes. The switches stay for one
+# release and are then removed.
+DEPRECATED_SWITCH_PARAMS = frozenset({PARAM_QUIET, PARAM_TUR})
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: EwpeConfigEntry,
@@ -108,10 +115,23 @@ async def async_setup_entry(
 ) -> None:
     """Register switch entities supported by this device."""
     coordinator = entry.runtime_data
+    descriptions = supported_switch_descriptions(coordinator.data or {})
     async_add_entities(
-        EwpeSwitchEntity(coordinator, description)
-        for description in supported_switch_descriptions(coordinator.data or {})
+        EwpeSwitchEntity(coordinator, description) for description in descriptions
     )
+    issue_id = f"quiet_turbo_switches_{entry.entry_id}"
+    if any(d.param in DEPRECATED_SWITCH_PARAMS for d in descriptions):
+        ir.async_create_issue(
+            hass,
+            DOMAIN,
+            issue_id,
+            is_fixable=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key="quiet_turbo_switches",
+            translation_placeholders={"name": entry.title},
+        )
+    else:
+        ir.async_delete_issue(hass, DOMAIN, issue_id)
 
 
 class EwpeSwitchEntity(EwpeEntity, SwitchEntity):

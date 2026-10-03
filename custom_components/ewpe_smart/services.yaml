@@ -32,10 +32,6 @@ set_state:
             - medium
             - medium_high
             - high
+            - quiet
+            - turbo
           translation_key: fan_mode
-    quiet:
-      selector:
-        boolean:
-    turbo:
-      selector:
-        boolean:
