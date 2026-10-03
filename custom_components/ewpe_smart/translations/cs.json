@@ -185,9 +185,29 @@
     }
   },
   "issues": {
-    "deprecated_fan_mode_switch": {
-      "title": "Přepínače Tichý režim a Turbo jsou zastaralé",
-      "description": "{entity_id} bude v některém z dalších vydání odstraněn. Tichý režim a Turbo jsou nově režimy ventilátoru u entity klimatizace. V automatizacích a na dashboardech používejte režim ventilátoru (nebo pole fan_mode u ewpe_smart.set_state) a poté tento přepínač vypněte."
+    "deprecated_quiet_switch": {
+      "title": "{entity_id} je zastaralý",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Vypnout {entity_id}?",
+            "description": "Tím se {entity_id} vypne. Do odstranění ho můžete znovu zapnout v nastavení entity."
+          }
+        }
+      },
+      "description": "{entity_id} bude v některém z dalších vydání odstraněn. Tichý režim je nově režim ventilátoru u entity klimatizace. V automatizacích a na dashboardech používejte ten (nebo pole fan_mode u ewpe_smart.set_state) a poté tento přepínač vypněte."
+    },
+    "deprecated_turbo_switch": {
+      "title": "{entity_id} je zastaralý",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Vypnout {entity_id}?",
+            "description": "Tím se {entity_id} vypne. Do odstranění ho můžete znovu zapnout v nastavení entity."
+          }
+        }
+      },
+      "description": "{entity_id} bude v některém z dalších vydání odstraněn. Turbo je nově režim ventilátoru u entity klimatizace. V automatizacích a na dashboardech používejte ten (nebo pole fan_mode u ewpe_smart.set_state) a poté tento přepínač vypněte."
     }
   },
   "exceptions": {

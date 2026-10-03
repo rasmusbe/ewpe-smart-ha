@@ -551,9 +551,29 @@
     }
   },
   "issues": {
-    "deprecated_fan_mode_switch": {
-      "title": "Switcharna Tyst och Turbo är föråldrade",
-      "description": "{entity_id} tas bort i en senare version. Tyst och Turbo är numera fläktlägen på klimatentiteten. Använd fläktläget (eller fältet fan_mode i ewpe_smart.set_state) i dina automationer och på dina dashboards, och inaktivera sedan den här switchen."
+    "deprecated_quiet_switch": {
+      "title": "{entity_id} är föråldrad",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Inaktivera {entity_id}?",
+            "description": "Det här inaktiverar {entity_id}. Du kan aktivera den igen i entitetsinställningarna tills den tas bort."
+          }
+        }
+      },
+      "description": "{entity_id} tas bort i en senare version. Tyst är numera ett fläktläge på klimatentiteten. Använd det (eller fältet fan_mode i ewpe_smart.set_state) i dina automationer och på dina dashboards, och inaktivera sedan den här switchen."
+    },
+    "deprecated_turbo_switch": {
+      "title": "{entity_id} är föråldrad",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Inaktivera {entity_id}?",
+            "description": "Det här inaktiverar {entity_id}. Du kan aktivera den igen i entitetsinställningarna tills den tas bort."
+          }
+        }
+      },
+      "description": "{entity_id} tas bort i en senare version. Turbo är numera ett fläktläge på klimatentiteten. Använd det (eller fältet fan_mode i ewpe_smart.set_state) i dina automationer och på dina dashboards, och inaktivera sedan den här switchen."
     }
   },
   "exceptions": {

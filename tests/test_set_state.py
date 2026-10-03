@@ -149,3 +149,21 @@ async def test_enabling_a_deprecated_switch_raises_issue(hass: HomeAssistant) ->
     )
     await hass.async_block_till_done()
     assert not ir.async_get(hass).issues
+
+
+async def test_repair_flow_disables_the_switch(hass: HomeAssistant) -> None:
+    from homeassistant.helpers import entity_registry as er
+
+    from custom_components.ewpe_smart.repairs import async_create_fix_flow
+
+    await _setup(hass, STATUS)
+    registry = er.async_get(hass)
+    flow = await async_create_fix_flow(
+        hass, "x", {"entity_id": "switch.living_room_ac_quiet"}
+    )
+    flow.hass = hass
+    registry.async_update_entity("switch.living_room_ac_quiet", disabled_by=None)
+    result = await flow.async_step_confirm({})
+    assert result["type"] == "create_entry"
+    quiet = registry.async_get("switch.living_room_ac_quiet")
+    assert quiet.disabled_by is er.RegistryEntryDisabler.USER

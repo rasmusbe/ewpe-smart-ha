@@ -150,9 +150,10 @@ class EwpeSwitchEntity(EwpeEntity, SwitchEntity):
                 self.hass,
                 DOMAIN,
                 self._issue_id,
-                is_fixable=False,
+                is_fixable=True,
+                data={"entity_id": self.entity_id},
                 severity=ir.IssueSeverity.WARNING,
-                translation_key="deprecated_fan_mode_switch",
+                translation_key=f"deprecated_{self._description.unique_id_suffix}_switch",
                 translation_placeholders={"entity_id": self.entity_id},
             )
 
